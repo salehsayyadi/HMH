@@ -11,20 +11,36 @@ permissions:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.22.x'
           cache: true
 
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
+
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      - name: Recreate Windows C++ Scaffolding
+        working-directory: source/windows_app
+        shell: pwsh
+        run: |
+          if (Test-Path windows) { Remove-Item -Recurse -Force windows }
+          flutter create --platforms=windows --project-name=hmh_windows_app .
+          # Copy custom icon if available
+          if (Test-Path assets/icons/app_icon.ico) {
+            Copy-Item -Path assets/icons/app_icon.ico -Destination windows/runner/resources/app_icon.ico -Force
+          }
 
       - name: Install dependencies
         working-directory: source/windows_app
@@ -47,6 +63,7 @@ jobs:
       - name: Compile Windows Setup Installer
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path "app/Windows/Setup" -Force
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" source/deployment/scripts/HMH-Setup.iss
 
       - name: Prepare Server & Web ZIPs
@@ -55,10 +72,11 @@ jobs:
           Compress-Archive -Path "app/Admin-Web/*" -DestinationPath "HMH-Admin-Web.zip" -Force
           Compress-Archive -Path "app/Server-Deployment/*" -DestinationPath "HMH-Server-Deployment.zip" -Force
 
-      - name: Create GitHub Release v1.0.0
+      - name: Create or Update GitHub Release v1.0.0
         uses: softprops/action-gh-release@v2
         with:
           name: "HMH — Imam Hossein Schools Reservation System v1.0.0"
+          tag_name: v1.0.0
           draft: false
           prerelease: false
           files: |
