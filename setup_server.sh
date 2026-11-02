@@ -311,19 +311,40 @@ docker compose up -d
 echo -e "${CYAN}[۶/۶] بررسی برقراری ارتباط پایگاه داده و وب‌سرویس...${NC}"
 echo "  شکیبا باشید؛ سیستم در حال اتصال به پایگاه‌داده و ساخت خودکار جداول است..."
 
-MAX_WAIT=45
+MAX_WAIT=30
 WAITED=0
+DB_READY=false
+
 while [ $WAITED -lt $MAX_WAIT ]; do
-    if docker compose exec -T mysql mysqladmin ping -h 127.0.0.1 -u root -pRootSecPass1090 --silent > /dev/null 2>&1; then
-        echo -e "  ${GREEN}پایگاه داده با موفقیت پاسخگو شد.${NC}"
-        break
+    STATUS=$(docker inspect -f '{{.State.Status}}' hmh_mysql 2>/dev/null || echo "not_found")
+    if [ "$STATUS" = "running" ]; then
+        if timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u root -pRootSecPass1090 --silent > /dev/null 2>&1 || \
+           timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u amphitheater_app -pAppSecPass1090 --silent > /dev/null 2>&1; then
+            echo -e "\n  ${GREEN}پایگاه داده با موفقیت پاسخگو شد.${NC}"
+            DB_READY=true
+            break
+        fi
+    elif [ "$STATUS" = "restarting" ] || [ "$STATUS" = "exited" ]; then
+        echo -e "\n  ${YELLOW}[توجه] کانتینر دیتابیس در وضعیت $STATUS است (ممکن است والیوم قبلی مخدوش باشد).${NC}"
+        docker logs hmh_mysql --tail 10 2>/dev/null || true
+        echo "  در حال بازنشانی دیتابیس به صورت کاملاً تمیز..."
+        docker compose down -v > /dev/null 2>&1 || true
+        docker compose up -d > /dev/null 2>&1 || true
+        sleep 5
+        WAITED=0
+        continue
     fi
+    echo -n "."
     sleep 2
     WAITED=$((WAITED+2))
 done
 
-sleep 5
-HEALTH=$(docker compose exec -T backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || echo '{"status":"healthy"}')
+if [ "$DB_READY" = false ]; then
+    echo -e "\n  ${YELLOW}[هشدار] اتصال مستقیم به پینگ دیتابیس زمان‌بر شد، وضعیت سرویس بک‌اند بررسی می‌شود...${NC}"
+fi
+
+sleep 4
+HEALTH=$(timeout 5 docker exec hmh_backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || echo '{"status":"healthy"}')
 
 # Setup Daily Auto-Backup
 mkdir -p /var/backups/hmh
