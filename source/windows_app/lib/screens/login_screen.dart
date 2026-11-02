@@ -125,29 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // Top Server Settings quick button
-            Positioned(
-              top: 24,
-              left: 24,
-              child: ElevatedButton.icon(
-                onPressed: _openServerSettings,
-                icon: const Icon(Icons.settings_ethernet_rounded, size: 21),
-                label: const Text(
-                  'تنظیمات اتصال سرور',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.white,
-                  foregroundColor: AppColors.primaryGreen,
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: const BorderSide(color: AppColors.cardBorder),
-                  ),
-                ),
-              ),
-            ),
+            // Center login card
 
             Center(
               child: SingleChildScrollView(
@@ -408,43 +386,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Current server info indicator & quick config
-                      InkWell(
-                        onTap: _openServerSettings,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primaryGreen,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'سرور: ${ApiService.baseUrl.replaceAll('/api/v1', '')}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
-                              ),
-                              const SizedBox(width: 6),
-                              const Icon(Icons.edit_rounded, size: 13, color: AppColors.secondaryText),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Footer copyright
-                      const Text(
-                        'نسخه تحت ویندوز ۱۰ و ۱۱ — ۱۴۰۳',
-                        style: TextStyle(fontSize: 10, color: AppColors.secondaryText),
                       ),
                     ],
                   ),

@@ -41,6 +41,10 @@ jobs:
           if (Test-Path assets/icons/app_icon.ico) {
             Copy-Item -Path assets/icons/app_icon.ico -Destination windows/runner/resources/app_icon.ico -Force
           }
+          # Copy custom centered square window configuration
+          if (Test-Path windows_custom/main.cpp) {
+            Copy-Item -Path windows_custom/main.cpp -Destination windows/runner/main.cpp -Force
+          }
 
       - name: Install dependencies
         working-directory: source/windows_app

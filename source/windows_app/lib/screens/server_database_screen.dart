@@ -10,24 +10,17 @@ class ServerDatabaseScreen extends StatefulWidget {
 }
 
 class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
-  // Right side fields
-  final _mainDomainController = TextEditingController(text: 'salehvip-clud.ir');
+  // Server connection fields
   final _subDomainController = TextEditingController(text: 'reserve.salehvip-clud.ir');
-  final _osController = TextEditingController(text: 'Ubuntu 24.04 LTS');
-  final _backendTechController = TextEditingController(text: 'FastAPI / Python');
-  final _dbHostController = TextEditingController(text: 'mysql');
-  final _dbNameController = TextEditingController(text: 'amphitheater_db');
   final _httpsPortController = TextEditingController(text: '443');
-  final _jwtSecretController = TextEditingController(text: '••••••••••••••••••••••••••••••');
-
-  // Left side fields
   final _apiUrlController = TextEditingController(text: 'https://reserve.salehvip-clud.ir/api/v1');
   final _wsUrlController = TextEditingController(text: 'wss://reserve.salehvip-clud.ir/ws');
-  final _webServerController = TextEditingController(text: 'Nginx');
-  final _dbTypeController = TextEditingController(text: 'MySQL 9.7 LTS');
+
+  // Database connection fields
+  final _dbHostController = TextEditingController(text: 'mysql');
   final _dbPortController = TextEditingController(text: '3306');
+  final _dbNameController = TextEditingController(text: 'amphitheater_db');
   final _dbUserController = TextEditingController(text: 'amphitheater_app');
-  final _sslCertController = TextEditingController(text: "Let's Encrypt");
 
   bool _isTesting = false;
   bool _apiConnected = false;
@@ -49,12 +42,26 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
 
     setState(() {
       _subDomainController.text = host;
+      _httpsPortController.text = port;
       _apiUrlController.text = '$proto://$host$path';
       _wsUrlController.text = '${proto == "https" ? "wss" : "ws"}://$host/ws';
-      _httpsPortController.text = port;
     });
 
     _testConnection(silent: true);
+  }
+
+  void _updateDerivedUrls() {
+    final host = _subDomainController.text.trim();
+    final port = _httpsPortController.text.trim();
+    final isHttps = port == '443';
+    final proto = isHttps ? 'https' : 'http';
+    final wsProto = isHttps ? 'wss' : 'ws';
+    final portStr = (port == '443' || port == '80' || port.isEmpty) ? '' : ':$port';
+
+    setState(() {
+      _apiUrlController.text = '$proto://$host$portStr/api/v1';
+      _wsUrlController.text = '$wsProto://$host$portStr/ws';
+    });
   }
 
   Future<void> _testConnection({bool silent = false}) async {
@@ -69,7 +76,7 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
       setState(() {
         _isTesting = false;
         _apiConnected = res['success'] == true;
-        _dbConnected = res['success'] == true; // If API is healthy, DB connection is online
+        _dbConnected = res['success'] == true; // If API responds, central database connection is operational
         if (!silent) {
           if (res['success'] == true) {
             _testMessage = 'اتصال با موفقیت برقرار گردید (تاخیر: ${res['latencyMs']}ms — نسخه: ${res['version']})';
@@ -118,55 +125,54 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header matching design reference
+              // Header
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.veryLightGreen,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.cardBorder),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.storage_rounded, color: AppColors.primaryGreen, size: 24),
+                    child: const Icon(Icons.storage_rounded, color: AppColors.primaryGreen, size: 26),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 16),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'تنظیمات اتصال به سرور',
+                          'تنظیمات اتصال به سرور و پایگاه داده',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkGreen,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        SizedBox(height: 3),
                         Text(
-                          'پیکربندی ارتباط با سرور، پایگاه‌داده و تنظیمات استقرار (Ubuntu Linux)',
-                          style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                          'پیکربندی پارامترهای ضروری ارتباط با سرور مرکزی لینوکس و پایگاه داده MySQL',
+                          style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
                         ),
                       ],
                     ),
                   ),
 
-                  // Connection status pills matching reference design
+                  // Connection status pills
                   _buildStatusPill('اتصال دیتابیس', _dbConnected),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   _buildStatusPill('اتصال API', _apiConnected),
                 ],
               ),
               const SizedBox(height: 20),
               const Divider(color: AppColors.cardBorder, height: 1),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               // Test message banner if any
               if (_testMessage != null) ...[
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: _apiConnected ? AppColors.veryLightGreen : AppColors.error,
                     borderRadius: BorderRadius.circular(12),
@@ -179,14 +185,14 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                       Icon(
                         _apiConnected ? Icons.check_circle_rounded : Icons.error_outline_rounded,
                         color: _apiConnected ? AppColors.primaryGreen : AppColors.holidayRedText,
-                        size: 20,
+                        size: 22,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _testMessage!,
                           style: TextStyle(
-                            fontSize: 11.5,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.bold,
                             color: _apiConnected ? AppColors.darkGreen : AppColors.holidayRedText,
                           ),
@@ -198,63 +204,87 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // 2-Column Grid matching reference design
+              // Clean 2-Column Grid of Essential Fields
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Right Column (Server and Hosting parameters)
+                  // Right Column (Server and API parameters)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInputField('دامنه اصلی', _mainDomainController, Icons.public),
-                        const SizedBox(height: 14),
-                        _buildInputField('زیردامنه سامانه', _subDomainController, Icons.domain),
-                        const SizedBox(height: 14),
-                        _buildInputField('سیستم‌عامل سرور', _osController, Icons.computer),
-                        const SizedBox(height: 14),
-                        _buildInputField('فناوری بک‌اند', _backendTechController, Icons.code),
-                        const SizedBox(height: 14),
-                        _buildInputField('میزبان دیتابیس', _dbHostController, Icons.dns),
-                        const SizedBox(height: 14),
-                        _buildInputField('نام دیتابیس', _dbNameController, Icons.dataset),
-                        const SizedBox(height: 14),
-                        _buildInputField('پورت HTTPS', _httpsPortController, Icons.numbers),
-                        const SizedBox(height: 14),
-                        _buildInputField('کلید JWT / Secret', _jwtSecretController, Icons.key, obscure: true),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.mainBackground,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.dns_rounded, size: 20, color: AppColors.primaryGreen),
+                              SizedBox(width: 8),
+                              Text(
+                                'مشخصات ارتباط سرور و وب‌سرویس (API)',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildInputField('دامنه یا آی‌پی سرور (Domain / IP)', _subDomainController, Icons.domain, onChanged: (_) => _updateDerivedUrls()),
+                          const SizedBox(height: 16),
+                          _buildInputField('پورت سرور (Port)', _httpsPortController, Icons.numbers, onChanged: (_) => _updateDerivedUrls()),
+                          const SizedBox(height: 16),
+                          _buildInputField('آدرس کامل وب‌سرویس API', _apiUrlController, Icons.api),
+                          const SizedBox(height: 16),
+                          _buildInputField('آدرس وب‌سوکت رویدادهای زنده (WebSocket)', _wsUrlController, Icons.sync_alt),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 28),
+                  const SizedBox(width: 22),
 
-                  // Left Column (API and Connection parameters)
+                  // Left Column (Database parameters on Server)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInputField('آدرس API', _apiUrlController, Icons.api),
-                        const SizedBox(height: 14),
-                        _buildInputField('آدرس WebSocket', _wsUrlController, Icons.sync_alt),
-                        const SizedBox(height: 14),
-                        _buildInputField('وب سرور', _webServerController, Icons.cloud),
-                        const SizedBox(height: 14),
-                        _buildInputField('دیتابیس', _dbTypeController, Icons.storage),
-                        const SizedBox(height: 14),
-                        _buildInputField('پورت دیتابیس', _dbPortController, Icons.numbers),
-                        const SizedBox(height: 14),
-                        _buildInputField('نام کاربری دیتابیس', _dbUserController, Icons.badge),
-                        const SizedBox(height: 14),
-                        _buildInputField('گواهی SSL', _sslCertController, Icons.security),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.mainBackground,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.storage_rounded, size: 20, color: AppColors.primaryGreen),
+                              SizedBox(width: 8),
+                              Text(
+                                'مشخصات پایگاه داده مرکزی (MySQL Server)',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildInputField('میزبان دیتابیس در سرور (Host)', _dbHostController, Icons.dns),
+                          const SizedBox(height: 16),
+                          _buildInputField('پورت پایگاه داده (MySQL Port)', _dbPortController, Icons.numbers),
+                          const SizedBox(height: 16),
+                          _buildInputField('نام پایگاه داده (Database Name)', _dbNameController, Icons.dataset),
+                          const SizedBox(height: 16),
+                          _buildInputField('نام کاربری دیتابیس (Database User)', _dbUserController, Icons.badge),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 28),
               const Divider(color: AppColors.cardBorder, height: 1),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // Action Buttons matching reference design (Enlarged)
+              // Action Buttons
               Row(
                 children: [
                   // Test Connection button
@@ -297,7 +327,7 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
 
   Widget _buildStatusPill(String title, bool isConnected) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: isConnected ? AppColors.veryLightGreen : AppColors.error,
         borderRadius: BorderRadius.circular(20),
@@ -309,18 +339,18 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7,
-            height: 7,
+            width: 9,
+            height: 9,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isConnected ? AppColors.primaryGreen : AppColors.holidayRedText,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             '$title: ${isConnected ? "متصل" : "قطع"}',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: isConnected ? AppColors.darkGreen : AppColors.holidayRedText,
             ),
@@ -330,25 +360,25 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, IconData icon, {bool obscure = false}) {
+  Widget _buildInputField(String label, TextEditingController controller, IconData icon, {ValueChanged<String>? onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.mainText),
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.mainText),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 6),
         TextField(
           controller: controller,
-          obscureText: obscure,
+          onChanged: onChanged,
           textDirection: TextDirection.ltr,
-          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, size: 18, color: AppColors.secondaryText),
+            prefixIcon: Icon(icon, size: 20, color: AppColors.secondaryText),
             filled: true,
-            fillColor: AppColors.veryLightGreen,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: AppColors.cardBorder),
@@ -359,7 +389,7 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.primaryGreen, width: 1.4),
+              borderSide: const BorderSide(color: AppColors.primaryGreen, width: 1.5),
             ),
           ),
         ),
