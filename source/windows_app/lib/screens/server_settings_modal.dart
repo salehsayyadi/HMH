@@ -384,13 +384,13 @@ class _ServerSettingsModalState extends State<ServerSettingsModal> {
                     OutlinedButton.icon(
                       onPressed: _isTesting ? null : _runConnectionTest,
                       icon: _isTesting
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.network_check_rounded, size: 18),
-                      label: Text(_isTesting ? 'در حال آزمایش...' : 'آزمایش اتصال'),
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.network_check_rounded, size: 20),
+                      label: Text(_isTesting ? 'در حال آزمایش...' : 'آزمایش اتصال سرور', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primaryGreen,
-                        side: const BorderSide(color: AppColors.primaryGreen),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        side: const BorderSide(color: AppColors.primaryGreen, width: 1.3),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -399,11 +399,11 @@ class _ServerSettingsModalState extends State<ServerSettingsModal> {
                     // Reset to default
                     TextButton.icon(
                       onPressed: _resetToDefault,
-                      icon: const Icon(Icons.restore_rounded, size: 18),
-                      label: const Text('پیش‌فرض'),
+                      icon: const Icon(Icons.restore_rounded, size: 20),
+                      label: const Text('پیش‌فرض', style: TextStyle(fontSize: 13)),
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.secondaryText,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                     ),
                     const Spacer(),
@@ -411,19 +411,20 @@ class _ServerSettingsModalState extends State<ServerSettingsModal> {
                     // Cancel
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText)),
+                      child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText, fontSize: 13)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
 
                     // Save and apply
                     ElevatedButton.icon(
                       onPressed: _isSaving ? null : _saveConfig,
-                      icon: const Icon(Icons.save_rounded, size: 18),
-                      label: Text(_isSaving ? 'در حال ذخیره...' : 'ذخیره و اعمال'),
+                      icon: const Icon(Icons.save_rounded, size: 20),
+                      label: Text(_isSaving ? 'در حال ذخیره...' : 'ذخیره و اعمال تنظیمات', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryGreen,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        elevation: 1,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),

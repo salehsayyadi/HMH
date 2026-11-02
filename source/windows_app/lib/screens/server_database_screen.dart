@@ -254,20 +254,20 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
               const Divider(color: AppColors.cardBorder, height: 1),
               const SizedBox(height: 20),
 
-              // Action Buttons matching reference design
+              // Action Buttons matching reference design (Enlarged)
               Row(
                 children: [
                   // Test Connection button
                   OutlinedButton.icon(
                     onPressed: _isTesting ? null : () => _testConnection(),
                     icon: _isTesting
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.network_check_rounded, size: 18),
-                    label: Text(_isTesting ? 'در حال آزمایش...' : 'آزمایش اتصال'),
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.network_check_rounded, size: 21),
+                    label: Text(_isTesting ? 'در حال آزمایش اتصال...' : 'آزمایش اتصال سرور و دیتابیس', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryGreen,
-                      side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      side: const BorderSide(color: AppColors.primaryGreen, width: 1.4),
+                      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -276,13 +276,13 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                   // Save Settings button (Green #006B52)
                   ElevatedButton.icon(
                     onPressed: _saveSettings,
-                    icon: const Icon(Icons.save_rounded, size: 18),
-                    label: const Text('ذخیره تنظیمات', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.save_rounded, size: 21),
+                    label: const Text('ذخیره و اعمال تنظیمات', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: Colors.white,
                       elevation: 2,
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),

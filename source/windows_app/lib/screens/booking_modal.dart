@@ -254,7 +254,7 @@ class _BookingModalState extends State<BookingModal> {
               ),
               const SizedBox(height: 22),
 
-              // Action Buttons
+              // Action Buttons (Enlarged)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -263,23 +263,24 @@ class _BookingModalState extends State<BookingModal> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.secondaryText,
                       side: const BorderSide(color: AppColors.cardBorder),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('انصراف', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('انصراف', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleSubmit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _isLoading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('ثبت رزرو', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('ثبت رزرو در سامانه', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

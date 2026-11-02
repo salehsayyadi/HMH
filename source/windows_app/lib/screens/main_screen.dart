@@ -88,7 +88,7 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             // Right Sidebar matching HMH visual identity
             Container(
-              width: 260,
+              width: 280,
               decoration: const BoxDecoration(
                 color: AppColors.white,
                 border: Border(left: BorderSide(color: AppColors.cardBorder, width: 1.2)),
@@ -98,7 +98,7 @@ class _MainScreenState extends State<MainScreen> {
                   // User Profile Box
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
                     decoration: const BoxDecoration(
                       color: AppColors.veryLightGreen,
                       border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
@@ -107,31 +107,31 @@ class _MainScreenState extends State<MainScreen> {
                       children: [
                         // Avatar Circle
                         Container(
-                          width: 52,
-                          height: 52,
+                          width: 58,
+                          height: 58,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppColors.primaryGreen,
                           ),
                           child: const Center(
-                            child: Icon(Icons.person, color: Colors.white, size: 28),
+                            child: Icon(Icons.person, color: Colors.white, size: 32),
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         Text(
                           widget.currentUser.fullName,
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkGreen,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Text(
                           widget.currentUser.positionTitle ?? (isSuperAdmin ? 'مدیر ارشد سیستم' : 'معاون اجرایی'),
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.secondaryGreen,
                           ),
@@ -140,7 +140,7 @@ class _MainScreenState extends State<MainScreen> {
                         Text(
                           widget.currentUser.schoolName ?? (isSuperAdmin ? 'مدیریت مرکزی موسسه' : 'مدرسه امام حسین (ع)'),
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             color: AppColors.secondaryText,
                           ),
                           textAlign: TextAlign.center,
@@ -152,7 +152,7 @@ class _MainScreenState extends State<MainScreen> {
                   // Navigation Menu
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       child: Column(
                         children: isSuperAdmin ? _buildSuperAdminNavItems() : _buildSchoolUserNavItems(),
                       ),
@@ -161,26 +161,26 @@ class _MainScreenState extends State<MainScreen> {
 
                   // Logout Button at bottom
                   Padding(
-                    padding: const EdgeInsets.all(14.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: InkWell(
                       onTap: _handleLogout,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
                         decoration: BoxDecoration(
                           color: AppColors.holidayRed,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: const Color(0xFFF7C3C9)),
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.logout, color: AppColors.holidayRedText, size: 16),
-                            SizedBox(width: 8),
+                            Icon(Icons.logout, color: AppColors.holidayRedText, size: 19),
+                            SizedBox(width: 10),
                             Text(
                               'خروج از حساب مدیریت',
                               style: TextStyle(
-                                fontSize: 11.5,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.holidayRedText,
                               ),
@@ -310,32 +310,32 @@ class _MainScreenState extends State<MainScreen> {
           _currentNavIndex = index;
         });
       },
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryGreen
               : (isSecondary ? AppColors.veryLightGreen : Colors.transparent),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: isSecondary && !isSelected ? Border.all(color: AppColors.cardBorder) : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 21,
               color: isSelected
                   ? Colors.white
                   : (isSecondary ? AppColors.primaryGreen : AppColors.secondaryText),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   color: isSelected
                       ? Colors.white
                       : (isSecondary ? AppColors.darkGreen : AppColors.mainText),

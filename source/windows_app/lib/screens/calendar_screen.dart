@@ -45,7 +45,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _days = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
       });
     } catch (_) {
-      // High-fidelity fallback week matching official design reference image
+      // Clean fallback week with all slots available (no dummy reservations)
       final fallbackSlots = [
         TimeSlotModel(id: 1, slotNumber: 1, title: '۰۸:۰۰ تا ۱۰:۰۰', startTime: '08:00', endTime: '10:00'),
         TimeSlotModel(id: 2, slotNumber: 2, title: '۱۰:۰۰ تا ۱۲:۰۰', startTime: '10:00', endTime: '12:00'),
@@ -54,115 +54,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
         TimeSlotModel(id: 5, slotNumber: 5, title: '۱۸:۰۰ تا ۲۰:۰۰', startTime: '18:00', endTime: '20:00'),
       ];
 
-      final fallbackDays = [
-        CalendarDayModel(
-          date: '2026-10-31',
-          jalaliDate: '۹ آبان ۱۴۰۵',
-          dayName: 'شنبه',
-          dayNumber: '۹',
-          isToday: false,
-          isHoliday: false,
-          slots: [
-            CalendarCellModel(date: '2026-10-31', jalaliDate: '۹ آبان ۱۴۰۵', jalaliDayName: 'شنبه', dayOfWeek: 0, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-10-31', jalaliDate: '۹ آبان ۱۴۰۵', jalaliDayName: 'شنبه', dayOfWeek: 0, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-10-31', jalaliDate: '۹ آبان ۱۴۰۵', jalaliDayName: 'شنبه', dayOfWeek: 0, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 101, schoolName: 'پسرانه دوره دوم', userFullName: 'محمدمحسن کارستان'),
-            CalendarCellModel(date: '2026-10-31', jalaliDate: '۹ آبان ۱۴۰۵', jalaliDayName: 'شنبه', dayOfWeek: 0, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-10-31', jalaliDate: '۹ آبان ۱۴۰۵', jalaliDayName: 'شنبه', dayOfWeek: 0, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-01',
-          jalaliDate: '۱۰ آبان ۱۴۰۵',
-          dayName: 'یکشنبه',
-          dayNumber: '۱۰',
-          isToday: false,
-          isHoliday: false,
-          slots: [
-            CalendarCellModel(date: '2026-11-01', jalaliDate: '۱۰ آبان ۱۴۰۵', jalaliDayName: 'یکشنبه', dayOfWeek: 1, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-01', jalaliDate: '۱۰ آبان ۱۴۰۵', jalaliDayName: 'یکشنبه', dayOfWeek: 1, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-01', jalaliDate: '۱۰ آبان ۱۴۰۵', jalaliDayName: 'یکشنبه', dayOfWeek: 1, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-01', jalaliDate: '۱۰ آبان ۱۴۰۵', jalaliDayName: 'یکشنبه', dayOfWeek: 1, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 102, schoolName: 'دخترانه دوره اول', userFullName: 'مریم حسینی'),
-            CalendarCellModel(date: '2026-11-01', jalaliDate: '۱۰ آبان ۱۴۰۵', jalaliDayName: 'یکشنبه', dayOfWeek: 1, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 103, schoolName: 'ابتدایی دخترانه', userFullName: 'فاطمه کریمی'),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-02',
-          jalaliDate: '۱۱ آبان ۱۴۰۵',
-          dayName: 'دوشنبه',
-          dayNumber: '۱۱',
-          isToday: true,
-          isHoliday: false,
-          slots: [
-            CalendarCellModel(date: '2026-11-02', jalaliDate: '۱۱ آبان ۱۴۰۵', jalaliDayName: 'دوشنبه', dayOfWeek: 2, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'blocked', isHoliday: false, isBlocked: true, blockReason: 'سرویس دوره‌ای سالن آمفی‌تئاتر'),
-            CalendarCellModel(date: '2026-11-02', jalaliDate: '۱۱ آبان ۱۴۰۵', jalaliDayName: 'دوشنبه', dayOfWeek: 2, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-02', jalaliDate: '۱۱ آبان ۱۴۰۵', jalaliDayName: 'دوشنبه', dayOfWeek: 2, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-02', jalaliDate: '۱۱ آبان ۱۴۰۵', jalaliDayName: 'دوشنبه', dayOfWeek: 2, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-02', jalaliDate: '۱۱ آبان ۱۴۰۵', jalaliDayName: 'دوشنبه', dayOfWeek: 2, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 104, schoolName: 'ابتدایی پسرانه', userFullName: 'علی رضایی'),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-03',
-          jalaliDate: '۱۲ آبان ۱۴۰۵',
-          dayName: 'سه‌شنبه',
-          dayNumber: '۱۲',
-          isToday: false,
-          isHoliday: true,
-          holidayTitle: 'تعطیل رسمی مناسبت مذهبی',
-          slots: [
-            CalendarCellModel(date: '2026-11-03', jalaliDate: '۱۲ آبان ۱۴۰۵', jalaliDayName: 'سه‌شنبه', dayOfWeek: 3, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'holiday', isHoliday: true, holidayTitle: 'تعطیل رسمی', isBlocked: false),
-            CalendarCellModel(date: '2026-11-03', jalaliDate: '۱۲ آبان ۱۴۰۵', jalaliDayName: 'سه‌شنبه', dayOfWeek: 3, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-03', jalaliDate: '۱۲ آبان ۱۴۰۵', jalaliDayName: 'سه‌شنبه', dayOfWeek: 3, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-03', jalaliDate: '۱۲ آبان ۱۴۰۵', jalaliDayName: 'سه‌شنبه', dayOfWeek: 3, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-03', jalaliDate: '۱۲ آبان ۱۴۰۵', jalaliDayName: 'سه‌شنبه', dayOfWeek: 3, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-04',
-          jalaliDate: '۱۳ آبان ۱۴۰۵',
-          dayName: 'چهارشنبه',
-          dayNumber: '۱۳',
-          isToday: false,
-          isHoliday: false,
-          slots: [
-            CalendarCellModel(date: '2026-11-04', jalaliDate: '۱۳ آبان ۱۴۰۵', jalaliDayName: 'چهارشنبه', dayOfWeek: 4, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-04', jalaliDate: '۱۳ آبان ۱۴۰۵', jalaliDayName: 'چهارشنبه', dayOfWeek: 4, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-04', jalaliDate: '۱۳ آبان ۱۴۰۵', jalaliDayName: 'چهارشنبه', dayOfWeek: 4, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-04', jalaliDate: '۱۳ آبان ۱۴۰۵', jalaliDayName: 'چهارشنبه', dayOfWeek: 4, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 105, schoolName: 'دخترانه دوره دوم', userFullName: 'زهرا اکبری'),
-            CalendarCellModel(date: '2026-11-04', jalaliDate: '۱۳ آبان ۱۴۰۵', jalaliDayName: 'چهارشنبه', dayOfWeek: 4, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 106, schoolName: 'پسرانه دوره اول', userFullName: 'حسین احمدی'),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-05',
-          jalaliDate: '۱۴ آبان ۱۴۰۵',
-          dayName: 'پنجشنبه',
-          dayNumber: '۱۴',
-          isToday: false,
-          isHoliday: false,
-          slots: [
-            CalendarCellModel(date: '2026-11-05', jalaliDate: '۱۴ آبان ۱۴۰۵', jalaliDayName: 'پنجشنبه', dayOfWeek: 5, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'reserved', isHoliday: false, isBlocked: false, reservationId: 107, schoolName: 'پسرانه دوره دوم', userFullName: 'محمدمحسن کارستان'),
-            CalendarCellModel(date: '2026-11-05', jalaliDate: '۱۴ آبان ۱۴۰۵', jalaliDayName: 'پنجشنبه', dayOfWeek: 5, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-05', jalaliDate: '۱۴ آبان ۱۴۰۵', jalaliDayName: 'پنجشنبه', dayOfWeek: 5, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'blocked', isHoliday: false, isBlocked: true, blockReason: 'سرویس دوره‌ای سالن'),
-            CalendarCellModel(date: '2026-11-05', jalaliDate: '۱۴ آبان ۱۴۰۵', jalaliDayName: 'پنجشنبه', dayOfWeek: 5, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-05', jalaliDate: '۱۴ آبان ۱۴۰۵', jalaliDayName: 'پنجشنبه', dayOfWeek: 5, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-          ],
-        ),
-        CalendarDayModel(
-          date: '2026-11-06',
-          jalaliDate: '۱۵ آبان ۱۴۰۵',
-          dayName: 'جمعه',
-          dayNumber: '۱۵',
-          isToday: false,
-          isHoliday: true,
-          holidayTitle: 'تعطیل هفتگی جمعه',
-          slots: [
-            CalendarCellModel(date: '2026-11-06', jalaliDate: '۱۵ آبان ۱۴۰۵', jalaliDayName: 'جمعه', dayOfWeek: 6, timeSlotId: 1, timeSlotTitle: '۰۸:۰۰ تا ۱۰:۰۰', status: 'holiday', isHoliday: true, holidayTitle: 'تعطیل هفتگی', isBlocked: false),
-            CalendarCellModel(date: '2026-11-06', jalaliDate: '۱۵ آبان ۱۴۰۵', jalaliDayName: 'جمعه', dayOfWeek: 6, timeSlotId: 2, timeSlotTitle: '۱۰:۰۰ تا ۱۲:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-06', jalaliDate: '۱۵ آبان ۱۴۰۵', jalaliDayName: 'جمعه', dayOfWeek: 6, timeSlotId: 3, timeSlotTitle: '۱۲:۳۰ تا ۱۴:۳۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-06', jalaliDate: '۱۵ آبان ۱۴۰۵', jalaliDayName: 'جمعه', dayOfWeek: 6, timeSlotId: 4, timeSlotTitle: '۱۵:۰۰ تا ۱۷:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-            CalendarCellModel(date: '2026-11-06', jalaliDate: '۱۵ آبان ۱۴۰۵', jalaliDayName: 'جمعه', dayOfWeek: 6, timeSlotId: 5, timeSlotTitle: '۱۸:۰۰ تا ۲۰:۰۰', status: 'available', isHoliday: false, isBlocked: false),
-          ],
-        ),
+      final dayConfigs = [
+        {'dayName': 'شنبه', 'num': '۹', 'date': '2026-10-31', 'jDate': '۹ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
+        {'dayName': 'یکشنبه', 'num': '۱۰', 'date': '2026-11-01', 'jDate': '۱۰ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
+        {'dayName': 'دوشنبه', 'num': '۱۱', 'date': '2026-11-02', 'jDate': '۱۱ آبان ۱۴۰۵', 'isToday': true, 'isHol': false},
+        {'dayName': 'سه‌شنبه', 'num': '۱۲', 'date': '2026-11-03', 'jDate': '۱۲ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
+        {'dayName': 'چهارشنبه', 'num': '۱۳', 'date': '2026-11-04', 'jDate': '۱۳ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
+        {'dayName': 'پنجشنبه', 'num': '۱۴', 'date': '2026-11-05', 'jDate': '۱۴ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
+        {'dayName': 'جمعه', 'num': '۱۵', 'date': '2026-11-06', 'jDate': '۱۵ آبان ۱۴۰۵', 'isToday': false, 'isHol': true, 'hTitle': 'تعطیل هفتگی جمعه'},
       ];
+
+      final fallbackDays = dayConfigs.map((cfg) {
+        final isHol = cfg['isHol'] as bool;
+        return CalendarDayModel(
+          date: cfg['date'] as String,
+          jalaliDate: cfg['jDate'] as String,
+          dayName: cfg['dayName'] as String,
+          dayNumber: cfg['num'] as String,
+          isToday: cfg['isToday'] as bool,
+          isHoliday: isHol,
+          holidayTitle: cfg['hTitle'] as String?,
+          slots: fallbackSlots.map((ts) => CalendarCellModel(
+            date: cfg['date'] as String,
+            jalaliDate: cfg['jDate'] as String,
+            jalaliDayName: cfg['dayName'] as String,
+            dayOfWeek: dayConfigs.indexOf(cfg),
+            timeSlotId: ts.id,
+            timeSlotTitle: ts.title,
+            status: isHol ? 'holiday' : 'available',
+            isHoliday: isHol,
+            holidayTitle: cfg['hTitle'] as String?,
+            isBlocked: false,
+          )).toList(),
+        );
+      }).toList();
 
       setState(() {
         _monthName = 'آبان';
@@ -181,18 +106,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (cell.status == 'blocked') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppColors.disabledText,
           content: Text(
-            'این سانس توسط مدیریت مسدود شده است: ${cell.blockReason ?? "نامشخص"}',
-            textDirection: TextDirection.rtl,
+            'این سانس مسدود است: ${cell.blockReason ?? "سرویس دوره‌ای سالن"}',
             style: const TextStyle(fontFamily: 'Vazirmatn'),
+            textDirection: TextDirection.rtl,
           ),
+          backgroundColor: AppColors.disabledText,
         ),
       );
-      return;
-    }
-
-    if (cell.status == 'reserved') {
+    } else if (cell.status == 'reserved') {
       showDialog(
         context: context,
         builder: (_) => ReservationDetailsModal(
@@ -227,14 +149,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.holidayRedText),
-            const SizedBox(height: 12),
-            Text(_errorMessage!, style: const TextStyle(fontSize: 13, color: AppColors.mainText)),
-            const SizedBox(height: 16),
+            const Icon(Icons.cloud_off, size: 54, color: AppColors.holidayRedText),
+            const SizedBox(height: 14),
+            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: AppColors.mainText)),
+            const SizedBox(height: 18),
             ElevatedButton(
               onPressed: _loadCalendar,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
-              child: const Text('تلاش مجدد'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('تلاش مجدد', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -246,12 +173,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Calendar Control Header matching reference design
+          // Top Calendar Control Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.cardBorder),
               boxShadow: [
                 BoxShadow(color: AppColors.darkGreen.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 4)),
@@ -259,35 +186,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             child: Row(
               children: [
-                // Month selector
+                // Month selector (Enlarged)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.veryLightGreen,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.chevron_right, size: 18, color: AppColors.primaryGreen),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryGreen),
+                      const SizedBox(width: 6),
                       Text(
                         '$_monthName $_jalaliYear',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.chevron_left, size: 18, color: AppColors.primaryGreen),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_left, size: 20, color: AppColors.primaryGreen),
                     ],
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
 
-                // 5 Week Tabs per Part 13.2
+                // 5 Week Tabs (Enlarged)
                 ...List.generate(5, (index) {
                   final weekLabels = ['هفته اول', 'هفته دوم', 'هفته سوم', 'هفته چهارم', 'هفته پنجم'];
                   final isSelected = _selectedWeekIndex == index;
                   return Padding(
-                    padding: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.only(left: 8),
                     child: InkWell(
                       onTap: () {
                         setState(() {
@@ -295,18 +222,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         });
                         _loadCalendar();
                       },
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.primaryGreen : AppColors.veryLightGreen,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
+                          border: isSelected ? null : Border.all(color: AppColors.cardBorder.withOpacity(0.6)),
                         ),
                         child: Text(
                           weekLabels[index],
                           style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 12.5,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                             color: isSelected ? AppColors.white : AppColors.secondaryText,
                           ),
                         ),
@@ -317,9 +245,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 const Spacer(),
 
-                // Today Pill
+                // Today Pill (Enlarged)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.pastelGreen,
                     borderRadius: BorderRadius.circular(20),
@@ -327,11 +255,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.today, size: 14, color: AppColors.primaryGreen),
-                      SizedBox(width: 6),
+                      Icon(Icons.today, size: 16, color: AppColors.primaryGreen),
+                      SizedBox(width: 8),
                       Text(
                         'امروز: دوشنبه، ۱۱ آبان ۱۴۰۵',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
                     ],
                   ),
@@ -339,9 +267,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Weekly Calendar Table matching exact design layout
+          // Weekly Calendar Table
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -359,19 +287,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     // Column Headers (Day/Date column on Right, then 5 Time Slots)
                     Container(
                       color: AppColors.veryLightGreen,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
                       child: Row(
                         children: [
                           // Right Date Column Header
                           const SizedBox(
-                            width: 130,
+                            width: 146,
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 14, color: AppColors.primaryGreen),
-                                SizedBox(width: 6),
+                                Icon(Icons.calendar_today, size: 16, color: AppColors.primaryGreen),
+                                SizedBox(width: 8),
                                 Text(
                                   'روز و تاریخ',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                                 ),
                               ],
                             ),
@@ -382,11 +310,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.access_time, size: 13, color: AppColors.secondaryText),
-                                  const SizedBox(width: 4),
+                                  const Icon(Icons.access_time, size: 15, color: AppColors.secondaryText),
+                                  const SizedBox(width: 6),
                                   Text(
                                     ts.title,
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.mainText),
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                   ),
                                 ],
                               ),
@@ -405,13 +333,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         itemBuilder: (context, dayIdx) {
                           final day = _days[dayIdx];
                           return SizedBox(
-                            height: 68,
+                            height: 76,
                             child: Row(
                               children: [
                                 // Day & Jalali Date Box (Right column)
                                 Container(
-                                  width: 146,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  width: 160,
+                                  padding: const EdgeInsets.symmetric(horizontal: 18),
                                   color: day.isToday ? AppColors.pastelGreen.withOpacity(0.4) : Colors.transparent,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -420,18 +348,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       Text(
                                         day.dayName,
                                         style: TextStyle(
-                                          fontSize: 13,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           color: day.isHoliday ? AppColors.holidayRedText : AppColors.darkGreen,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 3),
                                       Text(
                                         '${day.dayNumber} $_monthName',
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           color: day.isHoliday ? AppColors.holidayRedText : AppColors.secondaryText,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
@@ -492,15 +420,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(4.0),
+      padding: const EdgeInsets.all(5.0),
       child: Material(
         color: bgColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () => _onCellClicked(cell),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             alignment: Alignment.center,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -508,13 +436,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (cellIcon != null) Icon(cellIcon, size: 12, color: textColor),
-                    const SizedBox(width: 4),
+                    if (cellIcon != null) Icon(cellIcon, size: 15, color: textColor),
+                    const SizedBox(width: 5),
                     Flexible(
                       child: Text(
                         line1,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.bold,
                           color: textColor,
                         ),
@@ -524,13 +452,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   line2,
                   style: TextStyle(
-                    fontSize: 9.5,
-                    color: textColor.withOpacity(0.85),
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                    color: textColor.withOpacity(0.9),
+                    fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,

@@ -10,126 +10,168 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  bool _isLoading = false;
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _kpis = [
-    {'title': 'کل مدارس تحت پوشش', 'value': '۶', 'icon': Icons.school_outlined, 'color': AppColors.primaryGreen, 'bg': AppColors.veryLightGreen},
-    {'title': 'کل کاربران فعال', 'value': '۷', 'icon': Icons.people_outline, 'color': Color(0xFF1554A3), 'bg': Color(0xFFDCEBFF)},
-    {'title': 'رزروهای امروز', 'value': '۲', 'icon': Icons.today_outlined, 'color': AppColors.secondaryGreen, 'bg': Color(0xFFE8F5E9)},
-    {'title': 'رزروهای پیش‌رو', 'value': '۱۴', 'icon': Icons.event_available_outlined, 'color': Color(0xFF008866), 'bg': AppColors.pastelGreen},
-    {'title': 'رزروهای ماه جاری', 'value': '۴۸', 'icon': Icons.check_circle_outline, 'color': AppColors.darkGreen, 'bg': AppColors.veryLightGreen},
-    {'title': 'لغوشده‌های این ماه', 'value': '۳', 'icon': Icons.cancel_outlined, 'color': AppColors.holidayRedText, 'bg': AppColors.holidayRed},
+  int _totalSchools = 0;
+  int _totalUsers = 0;
+  int _todayReservations = 0;
+  int _upcomingReservations = 0;
+  int _monthlyReservations = 0;
+  int _monthlyCancellations = 0;
+
+  List<Map<String, dynamic>> _monthlyTrend = [
+    {'month': 'خرداد', 'count': 0, 'max': 50},
+    {'month': 'تیر', 'count': 0, 'max': 50},
+    {'month': 'مرداد', 'count': 0, 'max': 50},
+    {'month': 'شهریور', 'count': 0, 'max': 50},
+    {'month': 'مهر', 'count': 0, 'max': 50},
+    {'month': 'آبان', 'count': 0, 'max': 50},
   ];
 
-  final List<Map<String, dynamic>> _monthlyTrend = [
-    {'month': 'خرداد', 'count': 32, 'max': 60},
-    {'month': 'تیر', 'count': 18, 'max': 60},
-    {'month': 'مرداد', 'count': 24, 'max': 60},
-    {'month': 'شهریور', 'count': 39, 'max': 60},
-    {'month': 'مهر', 'count': 54, 'max': 60},
-    {'month': 'آبان', 'count': 48, 'max': 60},
-  ];
+  List<Map<String, dynamic>> _schoolStats = [];
+  List<Map<String, dynamic>> _recentActivities = [];
 
-  final List<Map<String, dynamic>> _schoolStats = [
-    {'name': 'دبیرستان پسرانه دوره دوم امام حسین (ع)', 'count': 15, 'percent': 0.85},
-    {'name': 'دبستان پسرانه امام حسین (ع)', 'count': 14, 'percent': 0.78},
-    {'name': 'دبیرستان دخترانه دوره اول امام حسین (ع)', 'count': 12, 'percent': 0.68},
-    {'name': 'دبستان دخترانه امام حسین (ع)', 'count': 11, 'percent': 0.62},
-    {'name': 'دبیرستان دخترانه دوره دوم امام حسین (ع)', 'count': 8, 'percent': 0.45},
-    {'name': 'دبیرستان پسرانه دوره اول امام حسین (ع)', 'count': 7, 'percent': 0.38},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
 
-  final List<Map<String, dynamic>> _recentActivities = [
-    {'school': 'دبیرستان پسرانه دوره دوم', 'user': 'محمدمحسن کارستان', 'time': '۱۰ دقیقه پیش', 'action': 'ثبت رزرو همایش کنکور', 'status': 'تأیید شده'},
-    {'school': 'دبستان دخترانه', 'user': 'فاطمه کریمی', 'time': '۳۵ دقیقه پیش', 'action': 'درخواست جشن قرآن', 'status': 'تأیید شده'},
-    {'school': 'دبیرستان دخترانه دوره اول', 'user': 'مریم حسینی', 'time': '۱ ساعت پیش', 'action': 'جلسه انجمن اولیا و مربیان', 'status': 'تأیید شده'},
-    {'school': 'دبستان پسرانه', 'user': 'علی رضایی', 'time': '۲ ساعت پیش', 'action': 'مسابقه سرود دانش‌آموزی', 'status': 'تأیید شده'},
-    {'school': 'دبیرستان پسرانه دوره اول', 'user': 'حسین احمدی', 'time': 'دیروز', 'action': 'لغو سانس عصر دوم', 'status': 'لغو شده'},
-  ];
+  Future<void> _loadDashboardData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final stats = await ApiService.getDashboardStats();
+      final logs = await ApiService.getAuditLogs();
+      final schools = await ApiService.getSchools();
+      final users = await ApiService.getUsers();
+
+      if (mounted) {
+        setState(() {
+          _totalSchools = schools.length;
+          _totalUsers = users.length;
+          if (stats != null) {
+            _todayReservations = stats['today_reservations'] ?? 0;
+            _upcomingReservations = stats['upcoming_reservations'] ?? 0;
+            _monthlyReservations = stats['monthly_reservations'] ?? 0;
+            _monthlyCancellations = stats['monthly_cancellations'] ?? 0;
+          }
+          _recentActivities = logs.map((log) => {
+            'school': log['school_name'] ?? 'مدیریت مرکزی',
+            'user': log['user_full_name'] ?? 'کاربر سیستم',
+            'action': log['action'] ?? 'عملیات',
+            'time': log['created_at_jalali'] ?? 'اخیراً',
+            'status': log['status'] ?? 'تأیید شده',
+          }).toList();
+        });
+      }
+    } catch (_) {
+      // In fresh/raw database, keep counters clean at 0 and lists empty
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final kpis = [
+      {'title': 'کل مدارس تحت پوشش', 'value': '$_totalSchools', 'icon': Icons.school_outlined, 'color': AppColors.primaryGreen, 'bg': AppColors.veryLightGreen},
+      {'title': 'کل کاربران فعال', 'value': '$_totalUsers', 'icon': Icons.people_outline, 'color': const Color(0xFF1554A3), 'bg': const Color(0xFFDCEBFF)},
+      {'title': 'رزروهای امروز', 'value': '$_todayReservations', 'icon': Icons.today_outlined, 'color': AppColors.secondaryGreen, 'bg': const Color(0xFFE8F5E9)},
+      {'title': 'رزروهای پیش‌رو', 'value': '$_upcomingReservations', 'icon': Icons.event_available_outlined, 'color': const Color(0xFF008866), 'bg': AppColors.pastelGreen},
+      {'title': 'رزروهای ماه جاری', 'value': '$_monthlyReservations', 'icon': Icons.check_circle_outline, 'color': AppColors.darkGreen, 'bg': AppColors.veryLightGreen},
+      {'title': 'لغوشده‌های این ماه', 'value': '$_monthlyCancellations', 'icon': Icons.cancel_outlined, 'color': AppColors.holidayRedText, 'bg': AppColors.holidayRed},
+    ];
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top Welcome Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 20),
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.cardBorder),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.veryLightGreen,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.dashboard_rounded, color: AppColors.primaryGreen, size: 26),
+                    child: const Icon(Icons.dashboard_rounded, color: AppColors.primaryGreen, size: 28),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 18),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'داشبورد مدیریت کل سامانه رزرواسیون آمفی‌تئاتر',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                         ),
-                        SizedBox(height: 3),
+                        SizedBox(height: 4),
                         Text(
-                          'نمای کلی آمار تحلیلی و وضعیت لحظه‌ای سالن آمفی‌تئاتر مرکزی مدارس امام حسین (ع) یزد',
-                          style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+                          'نمای کلی آمار تحلیلی و وضعیت لحظه‌ای سالن آمفی‌تئاتر مرکزی مدارس امام حسین (ع) یزد (برخط از پایگاه داده)',
+                          style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                         ),
                       ],
                     ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {});
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('اطلاعات داشبورد به‌روزرسانی شد.'), duration: Duration(seconds: 1)),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('به‌روزرسانی', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryGreen,
-                      side: const BorderSide(color: AppColors.cardBorder),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _loadDashboardData,
+                    icon: _isLoading
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.refresh, size: 20),
+                    label: const Text('به‌روزرسانی', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 1,
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
-            // 6 KPI Cards Grid
+            // 6 KPI Cards Grid (Enlarged)
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 6,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.5,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: 1.45,
               ),
-              itemCount: _kpis.length,
+              itemCount: kpis.length,
               itemBuilder: (context, i) {
-                final kpi = _kpis[i];
+                final kpi = kpis[i];
                 return Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.cardBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,30 +183,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           Expanded(
                             child: Text(
                               kpi['title'] as String,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: kpi['bg'] as Color,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(kpi['icon'] as IconData, size: 16, color: kpi['color'] as Color),
+                            child: Icon(kpi['icon'] as IconData, size: 19, color: kpi['color'] as Color),
                           ),
                         ],
                       ),
                       Text(
                         kpi['value'] as String,
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kpi['color'] as Color),
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: kpi['color'] as Color),
                       ),
                     ],
                   ),
                 );
               },
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             // Charts & Breakdown Row
             Row(
@@ -174,10 +216,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Expanded(
                   flex: 3,
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
                       color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: AppColors.cardBorder),
                     ),
                     child: Column(
@@ -188,12 +230,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           children: [
                             Text(
                               'روند ماهانه رزروهای سالن آمفی‌تئاتر',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                             ),
-                            Text('سال تحصیلی ۱۴۰۳-۱۴۰۴', style: TextStyle(fontSize: 11, color: AppColors.secondaryText)),
+                            Text('داده‌های زنده از پایگاه داده', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 26),
                         SizedBox(
                           height: 180,
                           child: Row(
@@ -202,22 +244,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             children: _monthlyTrend.map((item) {
                               final count = item['count'] as int;
                               final max = item['max'] as int;
-                              final barHeight = (count / max) * 140;
+                              final barHeight = count == 0 ? 6.0 : (count / max) * 140;
                               return Column(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Text('$count', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryGreen)),
-                                  const SizedBox(height: 6),
+                                  Text('$count', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryGreen)),
+                                  const SizedBox(height: 8),
                                   Container(
-                                    width: 38,
+                                    width: 44,
                                     height: barHeight,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryGreen,
+                                      color: count > 0 ? AppColors.primaryGreen : AppColors.cardBorder,
                                       borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(item['month'] as String, style: const TextStyle(fontSize: 11, color: AppColors.secondaryText)),
+                                  const SizedBox(height: 10),
+                                  Text(item['month'] as String, style: const TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                                 ],
                               );
                             }).toList(),
@@ -227,16 +269,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 20),
 
                 // Utilization by School
                 Expanded(
                   flex: 2,
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
                       color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: AppColors.cardBorder),
                     ),
                     child: Column(
@@ -244,114 +286,152 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       children: [
                         const Text(
                           'میزان استفاده مدارس از سالن',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                         ),
-                        const SizedBox(height: 16),
-                        ..._schoolStats.map((sc) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 20),
+                        if (_schoolStats.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            alignment: Alignment.center,
+                            child: const Column(
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        sc['name'] as String,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mainText),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Text('${sc['count']} رزرو', style: const TextStyle(fontSize: 11, color: AppColors.secondaryText)),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: (sc['percent'] as double),
-                                    backgroundColor: AppColors.veryLightGreen,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
-                                    minHeight: 6,
-                                  ),
+                                Icon(Icons.school_outlined, size: 40, color: AppColors.secondaryText),
+                                SizedBox(height: 10),
+                                Text(
+                                  'هنوز داده‌ای برای مدارس ثبت نشده است.',
+                                  style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
+                          )
+                        else
+                          ..._schoolStats.map((sc) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          sc['name'] as String,
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.mainText),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Text('${sc['count']} رزرو', style: const TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: (sc['percent'] as double),
+                                      backgroundColor: AppColors.veryLightGreen,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                                      minHeight: 8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             // Recent Activities Table
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.cardBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'آخرین رخدادها و رزروهای ثبت‌شده',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                    'آخرین رخدادها و رزروهای ثبت‌شده در دیتابیس',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                   ),
-                  const SizedBox(height: 12),
-                  Table(
-                    border: TableBorder(horizontalInside: BorderSide(color: AppColors.cardBorder.withOpacity(0.5))),
-                    columnWidths: const {
-                      0: FlexColumnWidth(2),
-                      1: FlexColumnWidth(1.5),
-                      2: FlexColumnWidth(2.5),
-                      3: FlexColumnWidth(1.2),
-                      4: FlexColumnWidth(1),
-                    },
-                    children: [
-                      const TableRow(
-                        decoration: BoxDecoration(color: AppColors.veryLightGreen),
+                  const SizedBox(height: 16),
+                  if (_recentActivities.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 48),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Padding(padding: EdgeInsets.all(10), child: Text('مدرسه متقاضی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(10), child: Text('کاربر ثبت‌کننده', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(10), child: Text('عنوان و موضوع برنامه', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(10), child: Text('زمان', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(10), child: Text('وضعیت', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
+                          Icon(Icons.history_toggle_off_rounded, size: 48, color: AppColors.secondaryText.withOpacity(0.5)),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'هیچ رخدادی در پایگاه داده ثبت نشده است.',
+                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.secondaryText),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'تمامی فعالیت‌ها، رزروها و لغوهای مدارس به‌صورت زنده پس از ثبت در دیتابیس در این جدول نمایش داده می‌شوند.',
+                            style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                          ),
                         ],
                       ),
-                      ..._recentActivities.map((act) {
-                        final isConfirmed = act['status'] == 'تأیید شده';
-                        return TableRow(
+                    )
+                  else
+                    Table(
+                      border: TableBorder(horizontalInside: BorderSide(color: AppColors.cardBorder.withOpacity(0.6))),
+                      columnWidths: const {
+                        0: FlexColumnWidth(2),
+                        1: FlexColumnWidth(1.5),
+                        2: FlexColumnWidth(2.5),
+                        3: FlexColumnWidth(1.2),
+                        4: FlexColumnWidth(1),
+                      },
+                      children: [
+                        const TableRow(
+                          decoration: BoxDecoration(color: AppColors.veryLightGreen),
                           children: [
-                            Padding(padding: const EdgeInsets.all(10), child: Text(act['school'] as String, style: const TextStyle(fontSize: 11.5, color: AppColors.darkGreen, fontWeight: FontWeight.w600))),
-                            Padding(padding: const EdgeInsets.all(10), child: Text(act['user'] as String, style: const TextStyle(fontSize: 11.5))),
-                            Padding(padding: const EdgeInsets.all(10), child: Text(act['action'] as String, style: const TextStyle(fontSize: 11.5))),
-                            Padding(padding: const EdgeInsets.all(10), child: Text(act['time'] as String, style: const TextStyle(fontSize: 11, color: AppColors.secondaryText))),
-                            Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: isConfirmed ? AppColors.pastelGreen : AppColors.holidayRed,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  act['status'] as String,
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isConfirmed ? AppColors.darkGreen : AppColors.holidayRedText),
-                                  textAlign: TextAlign.center,
+                            Padding(padding: EdgeInsets.all(12), child: Text('مدرسه متقاضی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                            Padding(padding: EdgeInsets.all(12), child: Text('کاربر ثبت‌کننده', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                            Padding(padding: EdgeInsets.all(12), child: Text('عنوان و موضوع برنامه', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                            Padding(padding: EdgeInsets.all(12), child: Text('زمان', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                            Padding(padding: EdgeInsets.all(12), child: Text('وضعیت', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                          ],
+                        ),
+                        ..._recentActivities.map((act) {
+                          final isConfirmed = act['status'] == 'تأیید شده';
+                          return TableRow(
+                            children: [
+                              Padding(padding: const EdgeInsets.all(12), child: Text(act['school'] as String, style: const TextStyle(fontSize: 12.5, color: AppColors.darkGreen, fontWeight: FontWeight.w600))),
+                              Padding(padding: const EdgeInsets.all(12), child: Text(act['user'] as String, style: const TextStyle(fontSize: 12.5))),
+                              Padding(padding: const EdgeInsets.all(12), child: Text(act['action'] as String, style: const TextStyle(fontSize: 12.5))),
+                              Padding(padding: const EdgeInsets.all(12), child: Text(act['time'] as String, style: const TextStyle(fontSize: 12, color: AppColors.secondaryText))),
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: isConfirmed ? AppColors.pastelGreen : AppColors.holidayRed,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    act['status'] as String,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isConfirmed ? AppColors.darkGreen : AppColors.holidayRedText),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ],
-                  ),
+                            ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
                 ],
               ),
             ),

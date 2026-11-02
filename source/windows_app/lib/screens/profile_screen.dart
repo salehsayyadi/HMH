@@ -212,17 +212,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,
-                      height: 44,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleChangePassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryGreen,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('ثبت رمز عبور جدید', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('ثبت رمز عبور جدید', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

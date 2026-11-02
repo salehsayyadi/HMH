@@ -149,14 +149,16 @@ class _AboutScreenState extends State<AboutScreen> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: _checking ? null : _checkServer,
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('بررسی مجدد اتصال به سرور'),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('بررسی مجدد اتصال به سرور', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryGreen,
-                      side: const BorderSide(color: AppColors.cardBorder),
+                      side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   ElevatedButton.icon(
                     onPressed: () async {
                       final changed = await showDialog<bool>(
@@ -167,12 +169,14 @@ class _AboutScreenState extends State<AboutScreen> {
                         _checkServer();
                       }
                     },
-                    icon: const Icon(Icons.settings_ethernet_rounded, size: 16),
-                    label: const Text('تنظیمات اتصال سرور'),
+                    icon: const Icon(Icons.settings_ethernet_rounded, size: 18),
+                    label: const Text('تنظیمات اتصال سرور', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: Colors.white,
                       elevation: 1,
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],

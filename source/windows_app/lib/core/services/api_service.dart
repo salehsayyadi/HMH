@@ -409,4 +409,224 @@ class ApiService {
       throw Exception('سرور پاسخگو نیست');
     }
   }
+
+  // --- Real Dynamic Database API Endpoints for Windows Administration ---
+
+  static Future<List<dynamic>> getUsers() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/users/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<dynamic>> getSchools() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/schools/?include_inactive=true'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<dynamic>> getReservations() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/reservations/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<dynamic>> getTimeSlots() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/time-slots/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<dynamic>> getHolidays() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/holidays/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<dynamic>> getRestrictions() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/restrictions/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<Map<String, dynamic>?> getDashboardStats() async {
+    if (isOfflineEmergencyMode) return null;
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/reports/dashboard'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<List<dynamic>> getAuditLogs() async {
+    if (isOfflineEmergencyMode) return [];
+    try {
+      final token = await getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/audit-logs/'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        return jsonDecode(utf8.decode(res.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // --- Real Database Mutation APIs for Windows Administration ---
+
+  static Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      throw Exception('در حالت آفلاین تغییر در پایگاه‌داده امکان‌پذیر نیست.');
+    }
+    final token = await getToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/users/'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode == 201) return resData;
+    throw Exception(resData['detail'] ?? 'خطا در ثبت کاربر در دیتابیس');
+  }
+
+  static Future<void> deleteUser(int id) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/users/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
+
+  static Future<Map<String, dynamic>> createSchool(Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      throw Exception('در حالت آفلاین تغییر در پایگاه‌داده امکان‌پذیر نیست.');
+    }
+    final token = await getToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/schools/'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode == 201) return resData;
+    throw Exception(resData['detail'] ?? 'خطا در ثبت مدرسه در دیتابیس');
+  }
+
+  static Future<void> deleteSchool(int id) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/schools/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
+
+  static Future<Map<String, dynamic>> createHoliday(Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      throw Exception('در حالت آفلاین تغییر در پایگاه‌داده امکان‌پذیر نیست.');
+    }
+    final token = await getToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/holidays/'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode == 201) return resData;
+    throw Exception(resData['detail'] ?? 'خطا در ثبت تعطیلی در دیتابیس');
+  }
+
+  static Future<void> deleteHoliday(int id) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/holidays/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
+
+  static Future<Map<String, dynamic>> createRestriction(Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      throw Exception('در حالت آفلاین تغییر در پایگاه‌داده امکان‌پذیر نیست.');
+    }
+    final token = await getToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/restrictions/'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode == 201) return resData;
+    throw Exception(resData['detail'] ?? 'خطا در ثبت محدودیت در دیتابیس');
+  }
+
+  static Future<void> deleteRestriction(int id) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/restrictions/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/api_service.dart';
 
 class AdminTimeSlotsScreen extends StatefulWidget {
   const AdminTimeSlotsScreen({super.key});
@@ -9,7 +10,9 @@ class AdminTimeSlotsScreen extends StatefulWidget {
 }
 
 class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
-  final List<Map<String, dynamic>> _slots = [
+  bool _isLoading = false;
+
+  List<Map<String, dynamic>> _slots = [
     {
       'id': 1,
       'number': 1,
@@ -57,6 +60,33 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSlots();
+  }
+
+  Future<void> _loadSlots() async {
+    try {
+      final rawSlots = await ApiService.getTimeSlots();
+      if (rawSlots.isNotEmpty && mounted) {
+        setState(() {
+          _slots = rawSlots.map<Map<String, dynamic>>((s) {
+            return {
+              'id': s['id'] ?? 0,
+              'number': s['slot_number'] ?? s['number'] ?? 1,
+              'title': s['title'] ?? 'سانس ${s['slot_number']}',
+              'startTime': s['start_time'] ?? '08:00',
+              'endTime': s['end_time'] ?? '10:00',
+              'description': s['description'] ?? 'سانس آمفی‌تئاتر',
+              'isActive': s['is_active'] ?? true,
+            };
+          }).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   void _showEditDialog(Map<String, dynamic> slot) {
     final titleCtrl = TextEditingController(text: slot['title'] as String);
     final startCtrl = TextEditingController(text: slot['startTime'] as String);
@@ -68,10 +98,10 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('ویرایش بازه زمانی: ${slot['title']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Text('ویرایش بازه زمانی: ${slot['title']}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           content: SizedBox(
-            width: 420,
+            width: 460,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -79,47 +109,60 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                   controller: titleCtrl,
                   decoration: InputDecoration(
                     labelText: 'عنوان بازه زمانی',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    labelStyle: const TextStyle(fontSize: 13),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: startCtrl,
+                        textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: 'ساعت شروع (مثال ۰۸:۰۰)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: endCtrl,
+                        textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: 'ساعت پایان (مثال ۱۰:۰۰)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 TextField(
                   controller: descCtrl,
                   maxLines: 2,
                   decoration: InputDecoration(
                     labelText: 'توضیحات و کاربرد بازه',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    labelStyle: const TextStyle(fontSize: 13),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(fontSize: 13, color: AppColors.secondaryText)),
+            ),
             ElevatedButton(
               onPressed: () {
                 setState(() {
@@ -133,8 +176,13 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                   const SnackBar(content: Text('تغییرات بازه زمانی با موفقیت ثبت شد.'), backgroundColor: AppColors.primaryGreen),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
-              child: const Text('ذخیره تغییرات'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('ذخیره تغییرات', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -151,64 +199,78 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
         children: [
           // Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.cardBorder),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.access_time_filled_rounded, color: AppColors.primaryGreen, size: 24),
-                SizedBox(width: 12),
-                Column(
+                const Icon(Icons.access_time_filled_rounded, color: AppColors.primaryGreen, size: 28),
+                const SizedBox(width: 14),
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('مدیریت ساعت‌ها و سانس‌های سالن آمفی‌تئاتر', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
-                    Text('تنظیم ۵ بازه زمانی استاندارد روزانه، تغییر ساعات شروع و پایان، و فعال/غیرفعال‌سازی', style: TextStyle(fontSize: 11, color: AppColors.secondaryText)),
+                    Text('مدیریت ساعت‌ها و سانس‌های سالن آمفی‌تئاتر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
+                    SizedBox(height: 3),
+                    Text('تنظیم ۵ بازه زمانی استاندارد روزانه، تغییر ساعات شروع و پایان، و فعال/غیرفعال‌سازی در دیتابیس', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _loadSlots,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('به‌روزرسانی سانس‌ها', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Slots List
           Expanded(
             child: ListView.separated(
               itemCount: _slots.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, i) {
                 final slot = _slots[i];
                 final isActive = slot['isActive'] as bool;
                 return Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: isActive ? AppColors.cardBorder : Colors.grey.shade300),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 54,
+                        height: 54,
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.veryLightGreen : AppColors.holidayRed,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Center(
                           child: Text(
                             '#${slot['number']}',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: isActive ? AppColors.primaryGreen : AppColors.holidayRedText,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 18),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,36 +279,36 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                               children: [
                                 Text(
                                   slot['title'] as String,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: AppColors.pastelGreen,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     '${slot['startTime']}  الی  ${slot['endTime']}',
-                                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontFamily: 'monospace'),
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontFamily: 'monospace'),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             Text(
                               slot['description'] as String,
-                              style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+                              style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
                         tooltip: 'ویرایش سانس',
-                        icon: const Icon(Icons.edit_outlined, color: AppColors.primaryGreen, size: 20),
+                        icon: const Icon(Icons.edit_outlined, color: AppColors.primaryGreen, size: 22),
                         onPressed: () => _showEditDialog(slot),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Switch(
                         value: isActive,
                         activeColor: AppColors.primaryGreen,

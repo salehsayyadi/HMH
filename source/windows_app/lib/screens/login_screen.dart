@@ -131,18 +131,18 @@ class _LoginScreenState extends State<LoginScreen> {
               left: 24,
               child: ElevatedButton.icon(
                 onPressed: _openServerSettings,
-                icon: const Icon(Icons.settings_ethernet_rounded, size: 18),
+                icon: const Icon(Icons.settings_ethernet_rounded, size: 21),
                 label: const Text(
                   'تنظیمات اتصال سرور',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.white,
                   foregroundColor: AppColors.primaryGreen,
                   elevation: 2,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     side: const BorderSide(color: AppColors.cardBorder),
                   ),
                 ),
@@ -376,10 +376,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 22),
 
-                      // Login button matching reference
+                      // Login button matching reference (Enlarged)
                       SizedBox(
                         width: double.infinity,
-                        height: 48,
+                        height: 54,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
@@ -392,18 +392,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: _isLoading
                               ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
                                 )
                               : const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.login_rounded, size: 20),
-                                    SizedBox(width: 8),
+                                    Icon(Icons.login_rounded, size: 22),
+                                    SizedBox(width: 10),
                                     Text(
                                       'ورود به سامانه',
-                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),

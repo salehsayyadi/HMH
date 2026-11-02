@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/api_service.dart';
 
 class AdminActivityScreen extends StatefulWidget {
   const AdminActivityScreen({super.key});
@@ -11,63 +12,44 @@ class AdminActivityScreen extends StatefulWidget {
 class _AdminActivityScreenState extends State<AdminActivityScreen> {
   final _searchController = TextEditingController();
   String _selectedAction = 'همه عملیات‌ها';
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _logs = [];
 
-  final List<Map<String, dynamic>> _logs = [
-    {
-      'id': 501,
-      'user': 'مدیر ارشد سامانه',
-      'school': 'مدیریت مرکزی موسسه',
-      'action': 'ورود به سامانه',
-      'ip': '192.168.1.10',
-      'time': '۱۱ آبان ۱۴۰۵ — ۱۱:۴۵',
-      'details': 'ورود موفق مدیر ارشد در حالت پیکربندی سیستم',
-    },
-    {
-      'id': 502,
-      'user': 'محمدمحسن کارستان',
-      'school': 'دبیرستان پسرانه دوره دوم',
-      'action': 'ثبت رزرو جدید',
-      'ip': '192.168.1.105',
-      'time': '۱۱ آبان ۱۴۰۵ — ۱۰:۳۰',
-      'details': 'ثبت سانس عصر اول (۱۵:۰۰ تا ۱۷:۰۰) برای همایش کنکور',
-    },
-    {
-      'id': 503,
-      'user': 'فاطمه کریمی',
-      'school': 'دبستان دخترانه',
-      'action': 'ثبت رزرو جدید',
-      'ip': '192.168.1.112',
-      'time': '۱۱ آبان ۱۴۰۵ — ۰۹:۱۵',
-      'details': 'ثبت سانس صبح اول برای جشن قرآن دانش‌آموزان',
-    },
-    {
-      'id': 504,
-      'user': 'مریم حسینی',
-      'school': 'دبیرستان دخترانه دوره اول',
-      'action': 'لغو رزرو',
-      'ip': '192.168.1.118',
-      'time': '۱۰ آبان ۱۴۰۵ — ۱۶:۰۰',
-      'details': 'لغو سانس ظهر به علت تداخل با جلسه اداری',
-    },
-    {
-      'id': 505,
-      'user': 'مدیر ارشد سامانه',
-      'school': 'مدیریت مرکزی موسسه',
-      'action': 'تغییر تنظیمات سرور',
-      'ip': '192.168.1.10',
-      'time': '۰۹ آبان ۱۴۰۵ — ۱۴:۲۰',
-      'details': 'به‌روزرسانی تنظیمات دیتابیس MySQL 9.7 و پورت سرور',
-    },
-    {
-      'id': 506,
-      'user': 'علی رضایی',
-      'school': 'دبستان پسرانه',
-      'action': 'ثبت رزرو جدید',
-      'ip': '192.168.1.110',
-      'time': '۰۸ آبان ۱۴۰۵ — ۱۱:۰۰',
-      'details': 'ثبت سانس صبح دوم جهت مسابقه سرود',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() => _isLoading = true);
+    try {
+      final rawLogs = await ApiService.getAuditLogs();
+      final mapped = rawLogs.map<Map<String, dynamic>>((l) {
+        return {
+          'id': l['id'] ?? 0,
+          'user': l['user_full_name'] ?? l['username'] ?? 'مدیر ارشد',
+          'school': l['school_name'] ?? 'مدیریت مرکزی',
+          'action': l['action'] ?? 'عملیات سامانه',
+          'ip': l['ip_address'] ?? '127.0.0.1',
+          'time': l['created_at_jalali'] ?? l['created_at'] ?? 'اخیراً',
+          'details': l['details'] ?? l['description'] ?? 'عملیات موفقیت‌آمیز',
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _logs = mapped;
+        });
+      }
+    } catch (_) {
+      // In clean database, keep empty
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,27 +69,41 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
         children: [
           // Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.cardBorder),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.history_rounded, color: AppColors.primaryGreen, size: 24),
-                SizedBox(width: 12),
-                Column(
+                const Icon(Icons.history_rounded, color: AppColors.primaryGreen, size: 28),
+                const SizedBox(width: 14),
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('تاریخچه فعالیت‌ها و لاگ امنیتی سیستم (Audit Trail)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
-                    Text('ردیابی تغییرات، رخدادهای ورود، ثبت و لغو رزروها با ثبت زمان و آدرس IP کاربر', style: TextStyle(fontSize: 11, color: AppColors.secondaryText)),
+                    Text('تاریخچه فعالیت‌ها و لاگ امنیتی سیستم (Audit Trail)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
+                    SizedBox(height: 3),
+                    Text('ردیابی تغییرات، رخدادهای ورود، ثبت و لغو رزروها با ثبت زمان و آدرس IP کاربر در پایگاه داده', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _loadLogs,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('به‌روزرسانی تاریخچه', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           // Filters
           Row(
@@ -117,21 +113,23 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
+                  style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'جستجو در لاگ‌ها بر اساس کاربر، عملیات یا جزئیات رویداد...',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
-                    prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.secondaryText),
+                    hintText: 'جستجو در لاگ‌ها بر اساس نام کاربر، عنوان عملیات یا جزئیات رویداد...',
+                    hintStyle: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+                    prefixIcon: const Icon(Icons.search, size: 22, color: AppColors.secondaryText),
                     filled: true,
                     fillColor: AppColors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -140,7 +138,7 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
                 child: DropdownButton<String>(
                   value: _selectedAction,
                   underline: const SizedBox(),
-                  style: const TextStyle(fontSize: 12, color: AppColors.mainText, fontFamily: 'Vazirmatn'),
+                  style: const TextStyle(fontSize: 13, color: AppColors.mainText, fontFamily: 'Vazirmatn'),
                   items: [
                     'همه عملیات‌ها',
                     'ورود به سامانه',
@@ -155,66 +153,95 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Audit Table
+          // Audit Table or Clean Empty State
           Expanded(
             child: Container(
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.cardBorder),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SingleChildScrollView(
-                  child: Table(
-                    columnWidths: const {
-                      0: FlexColumnWidth(1.8),
-                      1: FlexColumnWidth(1.4),
-                      2: FlexColumnWidth(1.8),
-                      3: FlexColumnWidth(1.1),
-                      4: FlexColumnWidth(1.8),
-                      5: FlexColumnWidth(3),
-                    },
-                    border: TableBorder(horizontalInside: BorderSide(color: AppColors.cardBorder.withOpacity(0.5))),
-                    children: [
-                      const TableRow(
-                        decoration: BoxDecoration(color: AppColors.veryLightGreen),
-                        children: [
-                          Padding(padding: EdgeInsets.all(12), child: Text('کاربر اقدام‌کننده', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(12), child: Text('مدرسه مربوطه', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(12), child: Text('نوع عملیات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(12), child: Text('آدرس IP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(12), child: Text('تاریخ و ساعت', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                          Padding(padding: EdgeInsets.all(12), child: Text('شرح و جزئیات رویداد', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5))),
-                        ],
-                      ),
-                      ...filtered.map((log) {
-                        return TableRow(
-                          children: [
-                            Padding(padding: const EdgeInsets.all(12), child: Text(log['user'] as String, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen))),
-                            Padding(padding: const EdgeInsets.all(12), child: Text(log['school'] as String, style: const TextStyle(fontSize: 11))),
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.pastelGreen,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(log['action'] as String, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen), textAlign: TextAlign.center),
+                borderRadius: BorderRadius.circular(18),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                    : filtered.isEmpty
+                        ? Center(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.history_outlined, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'هیچ رخدادی در تاریخچه سامانه ثبت نشده است.',
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'پایگاه داده در وضعیت خام قرار دارد. کلیه ورودها، ایجاد کاربران، ثبت و لغو رزروها پس از انجام به‌صورت خودکار در این جدول ذخیره می‌شوند.',
+                                    style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(padding: const EdgeInsets.all(12), child: Text(log['ip'] as String, style: const TextStyle(fontSize: 10.5, fontFamily: 'monospace', color: AppColors.secondaryText))),
-                            Padding(padding: const EdgeInsets.all(12), child: Text(log['time'] as String, style: const TextStyle(fontSize: 10.5, color: AppColors.secondaryText))),
-                            Padding(padding: const EdgeInsets.all(12), child: Text(log['details'] as String, style: const TextStyle(fontSize: 11))),
-                          ],
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
+                          )
+                        : SingleChildScrollView(
+                            child: Table(
+                              columnWidths: const {
+                                0: FlexColumnWidth(1.8),
+                                1: FlexColumnWidth(1.4),
+                                2: FlexColumnWidth(1.8),
+                                3: FlexColumnWidth(1.1),
+                                4: FlexColumnWidth(1.8),
+                                5: FlexColumnWidth(3),
+                              },
+                              border: TableBorder(horizontalInside: BorderSide(color: AppColors.cardBorder.withOpacity(0.5))),
+                              children: [
+                                const TableRow(
+                                  decoration: BoxDecoration(color: AppColors.veryLightGreen),
+                                  children: [
+                                    Padding(padding: EdgeInsets.all(14), child: Text('کاربر اقدام‌کننده', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                    Padding(padding: EdgeInsets.all(14), child: Text('مدرسه انتسابی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                    Padding(padding: EdgeInsets.all(14), child: Text('عنوان عملیات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                    Padding(padding: EdgeInsets.all(14), child: Text('آدرس IP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                    Padding(padding: EdgeInsets.all(14), child: Text('زمان رخداد', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                    Padding(padding: EdgeInsets.all(14), child: Text('شرح و جزئیات رویداد', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                  ],
+                                ),
+                                ...filtered.map((log) {
+                                  return TableRow(
+                                    children: [
+                                      Padding(padding: const EdgeInsets.all(14), child: Text(log['user'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: AppColors.darkGreen))),
+                                      Padding(padding: const EdgeInsets.all(14), child: Text(log['school'] as String, style: const TextStyle(fontSize: 12))),
+                                      Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.pastelGreen,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            log['action'] as String,
+                                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(padding: const EdgeInsets.all(14), child: Text(log['ip'] as String, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'))),
+                                      Padding(padding: const EdgeInsets.all(14), child: Text(log['time'] as String, style: const TextStyle(fontSize: 12, color: AppColors.secondaryText))),
+                                      Padding(padding: const EdgeInsets.all(14), child: Text(log['details'] as String, style: const TextStyle(fontSize: 12))),
+                                    ],
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
               ),
             ),
           ),

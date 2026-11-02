@@ -212,14 +212,14 @@ class _ReservationDetailsModalState extends State<ReservationDetailsModal> {
                         backgroundColor: AppColors.holidayRed,
                         foregroundColor: AppColors.holidayRedText,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: Color(0xFFF7C3C9)),
                         ),
                       ),
-                      icon: const Icon(Icons.cancel_outlined, size: 16),
-                      label: const Text('لغو این رزرو', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.cancel_outlined, size: 19),
+                      label: const Text('لغو این رزرو', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                     )
                   else
                     const SizedBox.shrink(),
@@ -229,10 +229,11 @@ class _ReservationDetailsModalState extends State<ReservationDetailsModal> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
+                      elevation: 1,
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('بستن', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('بستن پنجره', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
