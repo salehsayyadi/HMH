@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#004D3B"/>
+      <stop offset="100%" stop-color="#008866"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10A77D"/>
+      <stop offset="100%" stop-color="#006B52"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Circular Emblem Badge -->
+  <g transform="translate(390, 100)">
+    <!-- Outer Arc / Crest -->
+    <circle cx="0" cy="0" r="75" fill="none" stroke="#004D3B" stroke-width="4.5" stroke-dasharray="410 60" transform="rotate(-30)"/>
+    
+    <!-- Sunburst / Spiritual Rays -->
+    <path d="M-45 -20 Q0 -65 45 -20" fill="none" stroke="#10A77D" stroke-width="2" opacity="0.6"/>
+    <path d="M-35 -15 Q0 -52 35 -15" fill="none" stroke="#008866" stroke-width="2.5" opacity="0.8"/>
+    
+    <!-- Central Sacred Dome -->
+    <path d="M -22,10 C -22,-30 -12,-48 0,-58 C 12,-48 22,-30 22,10 Z" fill="url(#primaryGrad)"/>
+    <circle cx="0" cy="-60" r="3" fill="#10A77D"/>
+
+    <!-- Left Minaret -->
+    <rect x="-38" y="-45" width="8" height="55" rx="2" fill="url(#primaryGrad)"/>
+    <polygon points="-38,-45 -34,-55 -30,-45" fill="#004D3B"/>
+    <circle cx="-34" cy="-57" r="1.5" fill="#10A77D"/>
+
+    <!-- Right Minaret -->
+    <rect x="30" y="-45" width="8" height="55" rx="2" fill="url(#primaryGrad)"/>
+    <polygon points="30,-45 34,-55 38,-45" fill="#004D3B"/>
+    <circle cx="34" cy="-57" r="1.5" fill="#10A77D"/>
+
+    <!-- Open Book / Holy Quran at base -->
+    <path d="M -42,20 C -25,12 -8,18 0,26 C 8,18 25,12 42,20 C 35,28 15,24 0,33 C -15,24 -35,28 -42,20 Z" fill="#004D3B"/>
+    <path d="M -38,24 C -22,17 -8,22 0,28 C 8,22 22,17 38,24" fill="none" stroke="#EFF9F3" stroke-width="2"/>
+    <path d="M -40,30 C -25,23 -10,27 0,35 C 10,27 25,23 40,30" fill="none" stroke="#006B52" stroke-width="2.5"/>
+  </g>
+
+  <!-- Persian Typography -->
+  <!-- Line 1: Organization Name -->
+  <text x="300" y="75" font-family="Vazirmatn, Tahoma, sans-serif" font-size="18" font-weight="600" fill="#006B52" text-anchor="end" direction="rtl">
+    موسسه خیریه فرهنگی آموزشی
+  </text>
+  
+  <!-- Line 2: Sacred Title -->
+  <text x="300" y="112" font-family="Vazirmatn, Tahoma, sans-serif" font-size="24" font-weight="800" fill="#004D3B" text-anchor="end" direction="rtl">
+    حضرت امام حسین (ع) یزد
+  </text>
+
+  <!-- Line 3: System Title -->
+  <text x="300" y="145" font-family="Vazirmatn, Tahoma, sans-serif" font-size="14" font-weight="500" fill="#71867E" text-anchor="end" direction="rtl">
+    سامانه رزرواسیون مرکزی تالار آمفی‌تئاتر
+  </text>
+</svg>

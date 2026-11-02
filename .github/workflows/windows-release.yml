@@ -1,0 +1,72 @@
+name: Build Windows Application & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.22.x'
+          cache: true
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        working-directory: source/windows_app
+        run: flutter pub get
+
+      - name: Build Windows Executable (Release)
+        working-directory: source/windows_app
+        run: flutter build windows --release
+
+      - name: Prepare Portable Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "app/Windows/Portable" -Force
+          Copy-Item -Path "source/windows_app/build/windows/x64/runner/Release/*" -Destination "app/Windows/Portable/" -Recurse -Force
+          Compress-Archive -Path "app/Windows/Portable/*" -DestinationPath "HMH-Portable-x64.zip" -Force
+
+      - name: Install Inno Setup
+        uses: ducksoftware/inno-setup-action@v1.4
+        with:
+          issfile: 'source/deployment/scripts/HMH-Setup.iss'
+
+      - name: Prepare Server & Web ZIPs
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "app/Admin-Web/*" -DestinationPath "HMH-Admin-Web.zip" -Force
+          Compress-Archive -Path "app/Server-Deployment/*" -DestinationPath "HMH-Server-Deployment.zip" -Force
+
+      - name: Create GitHub Release v1.0.0
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "HMH — Imam Hossein Schools Reservation System v1.0.0"
+          draft: false
+          prerelease: false
+          files: |
+            app/Windows/Setup/HMH-Setup-x64.exe
+            HMH-Portable-x64.zip
+            HMH-Admin-Web.zip
+            HMH-Server-Deployment.zip
+          body: |
+            ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد — نسخه ۱.۰.۰
+
+            ### محتویات بسته انتشار (Phase 1):
+            1. **HMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
+            2. **HMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم
+            3. **HMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)
+            4. **HMH-Server-Deployment.zip**: پکیج کامل استقرار سرور لینوکس (Docker Compose + MySQL 9.7 LTS + Nginx)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

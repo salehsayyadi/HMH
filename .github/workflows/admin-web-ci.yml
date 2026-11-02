@@ -1,0 +1,32 @@
+name: Admin Web Panel Build & CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'source/admin_web/**'
+      - '.github/workflows/admin-web-ci.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: 'source/admin_web/package.json'
+
+      - name: Install dependencies
+        working-directory: source/admin_web
+        run: npm ci
+
+      - name: Build Production Admin Web
+        working-directory: source/admin_web
+        run: npm run build
