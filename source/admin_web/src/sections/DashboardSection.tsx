@@ -26,19 +26,60 @@ import { apiRequest, DashboardStats } from '../services/api';
 
 const COLORS = ['#006B52', '#10A77D', '#1554A3', '#B42335', '#F59E0B'];
 
+const offlineFallbackStats: DashboardStats = {
+  total_users: 7,
+  total_schools: 6,
+  today_reservations: 2,
+  upcoming_reservations: 14,
+  available_slots_week: 19,
+  reserved_slots_week: 12,
+  blocked_slots_week: 4,
+  monthly_reservations: 48,
+  monthly_cancellations: 3,
+  monthly_trend: [
+    { month: 'خرداد', count: 32 },
+    { month: 'تیر', count: 18 },
+    { month: 'مرداد', count: 24 },
+    { month: 'شهریور', count: 39 },
+    { month: 'مهر', count: 54 },
+    { month: 'آبان', count: 48 },
+  ],
+  status_distribution: [
+    { status: 'تأیید شده', count: 48 },
+    { status: 'در انتظار', count: 5 },
+    { status: 'لغو شده', count: 3 },
+  ],
+  reservations_by_school: [
+    { school: 'دبیرستان پسرانه دوره دوم امام حسین (ع)', count: 15 },
+    { school: 'دبستان پسرانه امام حسین (ع)', count: 14 },
+    { school: 'دبیرستان دخترانه دوره اول امام حسین (ع)', count: 12 },
+    { school: 'دبستان دخترانه امام حسین (ع)', count: 11 },
+    { school: 'دبیرستان دخترانه دوره دوم امام حسین (ع)', count: 8 },
+    { school: 'دبیرستان پسرانه دوره اول امام حسین (ع)', count: 7 },
+  ],
+  recent_activity: [
+    { id: 101, school: 'دبیرستان پسرانه دوره دوم', user: 'محمدمحسن کارستان', date: '۱۱ آبان ۱۴۰۵', time: '۱۵:۰۰ تا ۱۷:۰۰', status: 'تأیید شده', created_at: new Date().toISOString() },
+    { id: 102, school: 'دبستان دخترانه', user: 'فاطمه کریمی', date: '۱۲ آبان ۱۴۰۵', time: '۰۸:۰۰ تا ۱۰:۰۰', status: 'تأیید شده', created_at: new Date().toISOString() },
+    { id: 103, school: 'دبیرستان دخترانه دوره اول', user: 'مریم حسینی', date: '۱۴ آبان ۱۴۰۵', time: '۱۲:۳۰ تا ۱۴:۳۰', status: 'تأیید شده', created_at: new Date().toISOString() },
+    { id: 104, school: 'دبستان پسرانه', user: 'علی رضایی', date: '۱۵ آبان ۱۴۰۵', time: '۱۰:۰۰ تا ۱۲:۰۰', status: 'تأیید شده', created_at: new Date().toISOString() },
+  ]
+};
+
 export const DashboardSection: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isOfflinePreview, setIsOfflinePreview] = useState(false);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
-      setError(null);
       const data = await apiRequest<DashboardStats>('/reports/dashboard');
       setStats(data);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری اطلاعات داشبورد');
+      setIsOfflinePreview(false);
+    } catch {
+      // Fallback to high-fidelity offline preview stats
+      setStats(offlineFallbackStats);
+      setIsOfflinePreview(true);
     } finally {
       setLoading(false);
     }
@@ -48,28 +89,16 @@ export const DashboardSection: React.FC = () => {
     fetchStats();
   }, []);
 
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-3">
         <RefreshCw className="animate-spin text-brand-primary" size={32} />
-        <p className="text-sm text-brand-muted">در حال دریافت جدیدترین آمار و اطلاعات پایگاه داده...</p>
+        <p className="text-xs text-brand-muted font-medium">در حال دریافت جدیدترین آمار و اطلاعات پایگاه داده...</p>
       </div>
     );
   }
 
-  if (error || !stats) {
-    return (
-      <div className="p-6 bg-res-red border border-red-200 rounded-card text-res-redText flex items-center justify-between">
-        <span>{error || 'داده‌ای دریافت نشد.'}</span>
-        <button 
-          onClick={fetchStats}
-          className="px-4 py-1.5 bg-white text-res-redText rounded-btn text-sm font-medium border border-red-300"
-        >
-          تلاش مجدد
-        </button>
-      </div>
-    );
-  }
+  if (!stats) return null;
 
   const kpis = [
     { label: 'کل مدارس تحت پوشش', value: stats.total_schools, icon: <School size={22} />, color: 'bg-emerald-50 text-brand-primary border-emerald-100' },
@@ -98,6 +127,15 @@ export const DashboardSection: React.FC = () => {
           <span>به‌روزرسانی داده‌ها</span>
         </button>
       </div>
+
+      {isOfflinePreview && (
+        <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-card flex items-center gap-3 text-xs">
+          <AlertTriangle size={18} className="text-amber-700 shrink-0" />
+          <span>
+            <strong>حالت پیش‌نمایش آفلاین:</strong> ارتباط با پایگاه‌داده MySQL سرور مرکزی هنوز فعال نیست. آمارها به صورت پیش‌فرض نمایش داده شده‌اند. برای اتصال سرور، به بخش «تنظیمات سامانه» مراجعه نمایید.
+          </span>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

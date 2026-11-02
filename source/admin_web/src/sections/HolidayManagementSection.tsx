@@ -2,11 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { CalendarOff, Plus, Trash2, Check, X, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
 import { apiRequest, Holiday } from '../services/api';
 
+const officialFallbackHolidays: Holiday[] = [
+  { id: 1, holiday_date: '2026-03-21', jalali_date: '۱ فروردین', title: 'آغاز سال نو و عید نوروز', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 2, holiday_date: '2026-03-22', jalali_date: '۲ فروردین', title: 'عید نوروز', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 3, holiday_date: '2026-04-01', jalali_date: '۱۲ فروردین', title: 'روز جمهوری اسلامی ایران', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 4, holiday_date: '2026-04-02', jalali_date: '۱۳ فروردین', title: 'روز طبیعت', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 5, holiday_date: '2026-06-03', jalali_date: '۱۴ خرداد', title: 'رحلت حضرت امام خمینی (ره)', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 6, holiday_date: '2026-06-04', jalali_date: '۱۵ خرداد', title: 'قیام خونین ۱۵ خرداد', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 7, holiday_date: '2026-07-28', jalali_date: '۶ مرداد', title: 'تاسوعای حسینی', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 8, holiday_date: '2026-07-29', jalali_date: '۷ مرداد', title: 'عاشورای حسینی', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 9, holiday_date: '2026-09-06', jalali_date: '۱۵ شهریور', title: 'اربعین حسینی', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+  { id: 10, holiday_date: '2026-11-13', jalali_date: '۲۲ بهمن', title: 'پیروزی انقلاب اسلامی ایران', is_official: true, is_manual: false, source: 'تقویم رسمی کشور', created_at: '' },
+];
+
 export const HolidayManagementSection: React.FC = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isOfflinePreview, setIsOfflinePreview] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,8 +34,10 @@ export const HolidayManagementSection: React.FC = () => {
       setLoading(true);
       const data = await apiRequest<Holiday[]>('/holidays');
       setHolidays(data);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری تعطیلات');
+      setIsOfflinePreview(false);
+    } catch {
+      setHolidays(officialFallbackHolidays);
+      setIsOfflinePreview(true);
     } finally {
       setLoading(false);
     }

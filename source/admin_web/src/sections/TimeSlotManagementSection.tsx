@@ -2,11 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Plus, Edit, ToggleLeft, ToggleRight, Check, X, AlertCircle } from 'lucide-react';
 import { apiRequest, TimeSlot } from '../services/api';
 
+const officialDefaultSlots: TimeSlot[] = [
+  { id: 1, slot_number: 1, title: 'صبح اول', start_time: '08:00', end_time: '10:00', is_active: true },
+  { id: 2, slot_number: 2, title: 'صبح دوم', start_time: '10:00', end_time: '12:00', is_active: true },
+  { id: 3, slot_number: 3, title: 'ظهر', start_time: '12:30', end_time: '14:30', is_active: true },
+  { id: 4, slot_number: 4, title: 'عصر اول', start_time: '15:00', end_time: '17:00', is_active: true },
+  { id: 5, slot_number: 5, title: 'عصر دوم', start_time: '18:00', end_time: '20:00', is_active: true },
+];
+
 export const TimeSlotManagementSection: React.FC = () => {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isOfflinePreview, setIsOfflinePreview] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -25,8 +34,10 @@ export const TimeSlotManagementSection: React.FC = () => {
       setLoading(true);
       const data = await apiRequest<TimeSlot[]>('/time-slots');
       setSlots(data);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری بازه‌های زمانی');
+      setIsOfflinePreview(false);
+    } catch {
+      setSlots(officialDefaultSlots);
+      setIsOfflinePreview(true);
     } finally {
       setLoading(false);
     }

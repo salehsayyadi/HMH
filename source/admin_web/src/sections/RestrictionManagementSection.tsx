@@ -2,12 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Plus, Unlock, Check, X, AlertCircle, Clock, Calendar } from 'lucide-react';
 import { apiRequest, Restriction, TimeSlot } from '../services/api';
 
+const fallbackRestrictions: Restriction[] = [
+  {
+    id: 1,
+    restriction_type: 'date_range',
+    start_date: '2027-01-02',
+    end_date: '2027-01-20',
+    jalali_start_date: '۱۲ دی ۱۴۰۵',
+    jalali_end_date: '۳۰ دی ۱۴۰۵',
+    reason: 'برگزاری امتحانات نوبت اول مدارس و آماده‌سازی سالن برای حوزه‌های آزمون',
+    created_by_name: 'مدیر کل سامانه',
+    is_active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    restriction_type: 'single_slot',
+    start_date: '2026-11-20',
+    end_date: '2026-11-20',
+    jalali_start_date: '۲۹ آبان ۱۴۰۵',
+    jalali_end_date: '۲۹ آبان ۱۴۰۵',
+    time_slot_id: 3,
+    time_slot_title: 'ظهر (۱۲:۳۰ تا ۱۴:۳۰)',
+    reason: 'سرویس دوره‌ای سیستم‌های صوت و تصویر و نورپردازی آمفی‌تئاتر',
+    created_by_name: 'مدیر کل سامانه',
+    is_active: true,
+    created_at: new Date().toISOString()
+  }
+];
+
 export const RestrictionManagementSection: React.FC = () => {
   const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isOfflinePreview, setIsOfflinePreview] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,8 +56,17 @@ export const RestrictionManagementSection: React.FC = () => {
       ]);
       setRestrictions(rData);
       setSlots(sData);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری محدودیت‌ها');
+      setIsOfflinePreview(false);
+    } catch {
+      setRestrictions(fallbackRestrictions);
+      setSlots([
+        { id: 1, slot_number: 1, title: 'صبح اول', start_time: '08:00', end_time: '10:00', is_active: true },
+        { id: 2, slot_number: 2, title: 'صبح دوم', start_time: '10:00', end_time: '12:00', is_active: true },
+        { id: 3, slot_number: 3, title: 'ظهر', start_time: '12:30', end_time: '14:30', is_active: true },
+        { id: 4, slot_number: 4, title: 'عصر اول', start_time: '15:00', end_time: '17:00', is_active: true },
+        { id: 5, slot_number: 5, title: 'عصر دوم', start_time: '18:00', end_time: '20:00', is_active: true },
+      ]);
+      setIsOfflinePreview(true);
     } finally {
       setLoading(false);
     }

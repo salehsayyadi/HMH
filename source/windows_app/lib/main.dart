@@ -61,17 +61,20 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    final token = await ApiService.getToken();
-    if (token == null) {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-      return;
-    }
+    // Add small visual delay so splash isn't just a flicker (600ms)
+    await Future.delayed(const Duration(milliseconds: 600));
 
     try {
-      final res = await ApiService.getMe();
+      final token = await ApiService.getToken().timeout(const Duration(milliseconds: 1000), onTimeout: () => null);
+      if (token == null || token.isEmpty || token.startsWith('offline_')) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+        return;
+      }
+
+      final res = await ApiService.getMe().timeout(const Duration(milliseconds: 1200));
       final user = UserModel.fromJson(res);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

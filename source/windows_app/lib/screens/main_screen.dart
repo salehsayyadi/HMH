@@ -20,17 +20,12 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  late int _currentNavIndex;
+  int _currentNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // If in offline emergency configuration mode, start directly in Server & DB settings
-    if (ApiService.isOfflineEmergencyMode || widget.currentUser.role == 'super_admin') {
-      _currentNavIndex = ApiService.isOfflineEmergencyMode ? 4 : 0;
-    } else {
-      _currentNavIndex = 0;
-    }
+    _currentNavIndex = 0;
   }
 
   Future<void> _handleLogout() async {
@@ -157,18 +152,6 @@ class _MainScreenState extends State<MainScreen> {
                           _buildNavItem(2, 'پروفایل کاربری', Icons.person_outline),
                           const SizedBox(height: 6),
                           _buildNavItem(3, 'درباره برنامه', Icons.info_outline),
-
-                          if (isSuperAdmin) ...[
-                            const SizedBox(height: 14),
-                            const Divider(color: AppColors.cardBorder, height: 1),
-                            const SizedBox(height: 14),
-                            _buildNavItem(
-                              4,
-                              'تنظیمات سرور و دیتابیس',
-                              Icons.storage_rounded,
-                              isHighlighted: isOffline,
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -228,14 +211,13 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 22),
+                            Icon(Icons.wifi_off_rounded, color: Colors.amber.shade900, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'حالت پیکربندی آفلاین مدیر کل فعال است: سرور یا دیتابیس در آدرس «${ApiService.baseUrl}» در دسترس نیست. '
-                                'می‌توانید اطلاعات سرور و پایگاه‌داده را در بخش «تنظیمات سرور و دیتابیس» اصلاح و آزمایش فرمایید.',
+                                'سامانه در وضعیت آفلاین قرار دارد (سرور «${ApiService.baseUrl}» در دسترس نیست).',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11.5,
                                   color: Colors.amber.shade900,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -243,18 +225,14 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             const SizedBox(width: 12),
                             ElevatedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _currentNavIndex = 4;
-                                });
-                              },
-                              icon: const Icon(Icons.settings, size: 16),
-                              label: const Text('تنظیمات دیتابیس', style: TextStyle(fontSize: 11)),
+                              onPressed: () => ServerSettingsModal.show(context),
+                              icon: const Icon(Icons.settings, size: 15),
+                              label: const Text('تنظیمات اتصال سرور', style: TextStyle(fontSize: 11)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber.shade800,
+                                backgroundColor: AppColors.primaryGreen,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),
@@ -339,8 +317,6 @@ class _MainScreenState extends State<MainScreen> {
         return ProfileScreen(currentUser: widget.currentUser);
       case 3:
         return const AboutScreen();
-      case 4:
-        return const ServerDatabaseScreen();
       default:
         return CalendarScreen(currentUser: widget.currentUser);
     }

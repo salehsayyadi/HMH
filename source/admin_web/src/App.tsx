@@ -10,7 +10,7 @@ import { HolidayManagementSection } from './sections/HolidayManagementSection';
 import { RestrictionManagementSection } from './sections/RestrictionManagementSection';
 import { ReportsSection } from './sections/ReportsSection';
 import { AuditLogsSection } from './sections/AuditLogsSection';
-import { ServerSettingsSection } from './sections/ServerSettingsSection';
+import { SystemSettingsSection } from './sections/SystemSettingsSection';
 import { apiRequest, clearTokens, getAccessToken, User } from './services/api';
 import { Calendar, Bell, Shield, Wifi } from 'lucide-react';
 
@@ -26,6 +26,32 @@ export const App: React.FC = () => {
     const checkAuth = async () => {
       const token = getAccessToken();
       if (!token) {
+        setLoadingAuth(false);
+        return;
+      }
+      if (token.startsWith('offline_')) {
+        const offlineUser: User = {
+          id: 1,
+          username: '123IMHModirkol@1090',
+          first_name: 'مدیر',
+          last_name: 'ارشد',
+          full_name: 'مدیر ارشد سامانه (حالت پیکربندی آفلاین)',
+          role: 'super_admin',
+          phone_number: '09130000000',
+          is_active: true,
+          must_change_password: false,
+          school: {
+            id: 1,
+            name: 'مدیریت مرکزی موسسه امام حسین (ع)',
+            code: 'CENTRAL'
+          },
+          position: {
+            id: 1,
+            title: 'مدیر ارشد سیستم'
+          },
+          created_at: new Date().toISOString()
+        };
+        setCurrentUser(offlineUser);
         setLoadingAuth(false);
         return;
       }
@@ -180,7 +206,7 @@ export const App: React.FC = () => {
           {currentSection === 'restrictions' && <RestrictionManagementSection />}
           {currentSection === 'reports' && <ReportsSection />}
           {currentSection === 'audit' && <AuditLogsSection />}
-          {currentSection === 'settings' && <ServerSettingsSection />}
+          {currentSection === 'settings' && <SystemSettingsSection />}
         </main>
       </div>
     </div>

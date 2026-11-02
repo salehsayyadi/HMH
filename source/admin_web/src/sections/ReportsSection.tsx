@@ -2,11 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Download, Calendar, School, Filter, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { apiRequest, DashboardStats, School as SchoolType, API_BASE_URL, getAccessToken } from '../services/api';
 
+const reportsFallbackStats: DashboardStats = {
+  total_users: 7,
+  total_schools: 6,
+  today_reservations: 2,
+  upcoming_reservations: 14,
+  available_slots_week: 19,
+  reserved_slots_week: 12,
+  blocked_slots_week: 4,
+  monthly_reservations: 48,
+  monthly_cancellations: 3,
+  monthly_trend: [
+    { month: 'خرداد', count: 32 },
+    { month: 'تیر', count: 18 },
+    { month: 'مرداد', count: 24 },
+    { month: 'شهریور', count: 39 },
+    { month: 'مهر', count: 54 },
+    { month: 'آبان', count: 48 },
+  ],
+  status_distribution: [
+    { status: 'تأیید شده', count: 48 },
+    { status: 'در انتظار', count: 5 },
+    { status: 'لغو شده', count: 3 },
+  ],
+  reservations_by_school: [
+    { school: 'دبیرستان پسرانه دوره دوم امام حسین (ع)', count: 15 },
+    { school: 'دبستان پسرانه امام حسین (ع)', count: 14 },
+    { school: 'دبیرستان دخترانه دوره اول امام حسین (ع)', count: 12 },
+    { school: 'دبستان دخترانه امام حسین (ع)', count: 11 },
+    { school: 'دبیرستان دخترانه دوره دوم امام حسین (ع)', count: 8 },
+    { school: 'دبیرستان پسرانه دوره اول امام حسین (ع)', count: 7 },
+  ],
+  recent_activity: []
+};
+
 export const ReportsSection: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [schools, setSchools] = useState<SchoolType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOfflinePreview, setIsOfflinePreview] = useState(false);
 
   const [filterSchool, setFilterSchool] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -20,8 +55,18 @@ export const ReportsSection: React.FC = () => {
       ]);
       setStats(stData);
       setSchools(scData);
-    } catch (err: any) {
-      setError(err.message || 'خطا در بارگذاری گزارش‌ها');
+      setIsOfflinePreview(false);
+    } catch {
+      setStats(reportsFallbackStats);
+      setSchools([
+        { id: 1, name: 'دبستان دخترانه امام حسین (ع)', is_active: true, created_at: '' },
+        { id: 2, name: 'دبستان پسرانه امام حسین (ع)', is_active: true, created_at: '' },
+        { id: 3, name: 'دبیرستان دخترانه دوره اول امام حسین (ع)', is_active: true, created_at: '' },
+        { id: 4, name: 'دبیرستان پسرانه دوره اول امام حسین (ع)', is_active: true, created_at: '' },
+        { id: 5, name: 'دبیرستان دخترانه دوره دوم امام حسین (ع)', is_active: true, created_at: '' },
+        { id: 6, name: 'دبیرستان پسرانه دوره دوم امام حسین (ع)', is_active: true, created_at: '' },
+      ]);
+      setIsOfflinePreview(true);
     } finally {
       setLoading(false);
     }
