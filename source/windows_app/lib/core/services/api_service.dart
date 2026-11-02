@@ -353,6 +353,21 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getMyHistory() => getMyReservations();
+
+  static Future<Map<String, dynamic>> createReservation({
+    required String date,
+    required int timeSlotId,
+    String? title,
+    String? description,
+  }) =>
+      reserveSlot(
+        timeSlotId: timeSlotId,
+        reservationDate: date,
+        title: title,
+        description: description,
+      );
+
   static Future<Map<String, dynamic>> changePassword({
     required String currentPassword,
     required String newPassword,

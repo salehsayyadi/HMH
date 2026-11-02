@@ -248,7 +248,7 @@ class _MainScreenState extends State<MainScreen> {
                     if (isOffline) ...[
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.bottom(16),
+                        margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
