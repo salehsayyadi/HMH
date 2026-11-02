@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     INITIAL_ADMIN_PASSWORD: str = "123IMHModirkol@1090"
 
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "https://reserve.salehvip-clud.ir",
         "http://localhost:3000",
         "http://localhost:5173",
@@ -54,9 +54,16 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000"
     ]
 
-    @field_validator("CORS_ORIGINS", mode="before")
+    @field_validator("CORS_ORIGINS", mode="after")
     def parse_cors(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    import json
+                    return json.loads(v)
+                except Exception:
+                    pass
             return [x.strip() for x in v.split(",") if x.strip()]
         return v
 

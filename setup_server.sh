@@ -116,7 +116,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 INITIAL_ADMIN_USERNAME=123IMHModirkol@1090
 INITIAL_ADMIN_PASSWORD=123IMHModirkol@1090
 
-CORS_ORIGINS=https://reserve.salehvip-clud.ir,http://localhost:3000,http://localhost:5173,http://localhost:8000,http://localhost,http://127.0.0.1:8000
+CORS_ORIGINS=["https://reserve.salehvip-clud.ir","http://localhost:3000","http://localhost:5173","http://localhost:8000","http://localhost","http://127.0.0.1:8000"]
 EOF
 
 # 5. Generate Standalone docker-compose.yml (MySQL + FastAPI Backend + Nginx SSL)
