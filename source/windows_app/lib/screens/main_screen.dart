@@ -9,6 +9,15 @@ import 'about_screen.dart';
 import 'login_screen.dart';
 import 'server_settings_modal.dart';
 import 'server_database_screen.dart';
+import 'admin/admin_dashboard_screen.dart';
+import 'admin/admin_users_screen.dart';
+import 'admin/admin_schools_screen.dart';
+import 'admin/admin_reservations_screen.dart';
+import 'admin/admin_time_slots_screen.dart';
+import 'admin/admin_holidays_screen.dart';
+import 'admin/admin_restrictions_screen.dart';
+import 'admin/admin_reports_screen.dart';
+import 'admin/admin_activity_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -25,6 +34,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    // Default to Dashboard (0) for super admin, or Calendar (0) for school user
     _currentNavIndex = 0;
   }
 
@@ -76,19 +86,19 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: AppColors.mainBackground,
         body: Row(
           children: [
-            // Right Sidebar matching design reference image
+            // Right Sidebar matching HMH visual identity
             Container(
-              width: 250,
+              width: 260,
               decoration: const BoxDecoration(
                 color: AppColors.white,
                 border: Border(left: BorderSide(color: AppColors.cardBorder, width: 1.2)),
               ),
               child: Column(
                 children: [
-                  // User Profile Box matching design reference
+                  // User Profile Box
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                     decoration: const BoxDecoration(
                       color: AppColors.veryLightGreen,
                       border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
@@ -97,27 +107,27 @@ class _MainScreenState extends State<MainScreen> {
                       children: [
                         // Avatar Circle
                         Container(
-                          width: 58,
-                          height: 58,
+                          width: 52,
+                          height: 52,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppColors.primaryGreen,
                           ),
                           child: const Center(
-                            child: Icon(Icons.person, color: Colors.white, size: 32),
+                            child: Icon(Icons.person, color: Colors.white, size: 28),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Text(
                           widget.currentUser.fullName,
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkGreen,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           widget.currentUser.positionTitle ?? (isSuperAdmin ? 'مدیر ارشد سیستم' : 'معاون اجرایی'),
                           style: const TextStyle(
@@ -130,7 +140,7 @@ class _MainScreenState extends State<MainScreen> {
                         Text(
                           widget.currentUser.schoolName ?? (isSuperAdmin ? 'مدیریت مرکزی موسسه' : 'مدرسه امام حسین (ع)'),
                           style: const TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 10,
                             color: AppColors.secondaryText,
                           ),
                           textAlign: TextAlign.center,
@@ -141,30 +151,22 @@ class _MainScreenState extends State<MainScreen> {
 
                   // Navigation Menu
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       child: Column(
-                        children: [
-                          _buildNavItem(0, 'صفحه اصلی', Icons.calendar_month_outlined),
-                          const SizedBox(height: 6),
-                          _buildNavItem(1, 'سوابق رزروها', Icons.history_edu_outlined),
-                          const SizedBox(height: 6),
-                          _buildNavItem(2, 'پروفایل کاربری', Icons.person_outline),
-                          const SizedBox(height: 6),
-                          _buildNavItem(3, 'درباره برنامه', Icons.info_outline),
-                        ],
+                        children: isSuperAdmin ? _buildSuperAdminNavItems() : _buildSchoolUserNavItems(),
                       ),
                     ),
                   ),
 
-                  // Logout Button at bottom matching reference design
+                  // Logout Button at bottom
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(14.0),
                     child: InkWell(
                       onTap: _handleLogout,
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                         decoration: BoxDecoration(
                           color: AppColors.holidayRed,
                           borderRadius: BorderRadius.circular(12),
@@ -173,12 +175,12 @@ class _MainScreenState extends State<MainScreen> {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.logout, color: AppColors.holidayRedText, size: 17),
+                            Icon(Icons.logout, color: AppColors.holidayRedText, size: 16),
                             SizedBox(width: 8),
                             Text(
-                              'خروج از حساب',
+                              'خروج از حساب مدیریت',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.holidayRedText,
                               ),
@@ -195,45 +197,51 @@ class _MainScreenState extends State<MainScreen> {
             // Main Content Area
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(22.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    // Offline banner if in emergency configuration mode
+                    // Offline subtle notification banner
                     if (isOffline) ...[
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.amber.shade300),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.wifi_off_rounded, color: Colors.amber.shade900, size: 20),
-                            const SizedBox(width: 12),
+                            Icon(Icons.wifi_off_rounded, color: Colors.amber.shade900, size: 18),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'سامانه در وضعیت آفلاین قرار دارد (سرور «${ApiService.baseUrl}» در دسترس نیست).',
+                                'حالت پیکربندی آفلاین مدیر کل: سرور در «${ApiService.baseUrl}» در دسترس نیست. می‌توانید اطلاعات سرور و دیتابیس را در بخش «تنظیمات سامانه» تنظیم و آزمایش فرمایید.',
                                 style: TextStyle(
-                                  fontSize: 11.5,
+                                  fontSize: 11,
                                   color: Colors.amber.shade900,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             ElevatedButton.icon(
-                              onPressed: () => ServerSettingsModal.show(context),
-                              icon: const Icon(Icons.settings, size: 15),
-                              label: const Text('تنظیمات اتصال سرور', style: TextStyle(fontSize: 11)),
+                              onPressed: () {
+                                if (isSuperAdmin) {
+                                  setState(() => _currentNavIndex = 9); // Settings index
+                                } else {
+                                  ServerSettingsModal.show(context);
+                                }
+                              },
+                              icon: const Icon(Icons.settings, size: 14),
+                              label: const Text('تنظیمات سرور', style: TextStyle(fontSize: 10.5)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryGreen,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                             ),
                           ],
@@ -241,7 +249,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ],
 
-                    Expanded(child: _buildCurrentScreen()),
+                    Expanded(child: _buildCurrentScreen(isSuperAdmin)),
                   ],
                 ),
               ),
@@ -252,7 +260,49 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String title, IconData icon, {bool isHighlighted = false}) {
+  /// 10 Section Super Administrator Menu + Calendar View
+  List<Widget> _buildSuperAdminNavItems() {
+    return [
+      _buildNavItem(0, 'داشبورد مدیریتی', Icons.dashboard_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(1, 'مدیریت کاربران', Icons.people_alt_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(2, 'مدیریت مدارس', Icons.school_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(3, 'مدیریت رزروها', Icons.event_available_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(4, 'مدیریت ساعت‌ها', Icons.access_time_filled_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(5, 'مدیریت تعطیلات', Icons.event_busy_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(6, 'مدیریت محدودیت‌ها', Icons.gpp_bad_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(7, 'گزارش‌ها و آمار', Icons.bar_chart_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(8, 'تاریخچه فعالیت‌ها', Icons.history_rounded),
+      const SizedBox(height: 4),
+      _buildNavItem(9, 'تنظیمات سامانه', Icons.settings_rounded),
+      const SizedBox(height: 8),
+      const Divider(height: 1, color: AppColors.cardBorder),
+      const SizedBox(height: 8),
+      _buildNavItem(10, 'تقویم رزرو سالن (نمای مدارس)', Icons.calendar_month_rounded, isSecondary: true),
+    ];
+  }
+
+  /// 4 Section Ordinary School User Menu
+  List<Widget> _buildSchoolUserNavItems() {
+    return [
+      _buildNavItem(0, 'صفحه اصلی (تقویم)', Icons.calendar_month_outlined),
+      const SizedBox(height: 6),
+      _buildNavItem(1, 'سوابق رزروها', Icons.history_edu_outlined),
+      const SizedBox(height: 6),
+      _buildNavItem(2, 'پروفایل کاربری', Icons.person_outline),
+      const SizedBox(height: 6),
+      _buildNavItem(3, 'درباره برنامه', Icons.info_outline),
+    ];
+  }
+
+  Widget _buildNavItem(int index, String title, IconData icon, {bool isSecondary = false}) {
     final isSelected = _currentNavIndex == index;
     return InkWell(
       onTap: () {
@@ -260,65 +310,85 @@ class _MainScreenState extends State<MainScreen> {
           _currentNavIndex = index;
         });
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryGreen
-              : (isHighlighted ? Colors.amber.shade100 : Colors.transparent),
-          borderRadius: BorderRadius.circular(12),
-          border: isHighlighted && !isSelected ? Border.all(color: Colors.amber.shade400) : null,
+              : (isSecondary ? AppColors.veryLightGreen : Colors.transparent),
+          borderRadius: BorderRadius.circular(10),
+          border: isSecondary && !isSelected ? Border.all(color: AppColors.cardBorder) : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 19,
+              size: 18,
               color: isSelected
                   ? Colors.white
-                  : (isHighlighted ? Colors.amber.shade900 : AppColors.secondaryText),
+                  : (isSecondary ? AppColors.primaryGreen : AppColors.secondaryText),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 11.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected
                       ? Colors.white
-                      : (isHighlighted ? Colors.amber.shade900 : AppColors.mainText),
+                      : (isSecondary ? AppColors.darkGreen : AppColors.mainText),
                 ),
               ),
             ),
-            if (isHighlighted && !isSelected)
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.amber.shade800,
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCurrentScreen() {
-    switch (_currentNavIndex) {
-      case 0:
-        return CalendarScreen(currentUser: widget.currentUser);
-      case 1:
-        return const HistoryScreen();
-      case 2:
-        return ProfileScreen(currentUser: widget.currentUser);
-      case 3:
-        return const AboutScreen();
-      default:
-        return CalendarScreen(currentUser: widget.currentUser);
+  Widget _buildCurrentScreen(bool isSuperAdmin) {
+    if (isSuperAdmin) {
+      switch (_currentNavIndex) {
+        case 0:
+          return const AdminDashboardScreen();
+        case 1:
+          return const AdminUsersScreen();
+        case 2:
+          return const AdminSchoolsScreen();
+        case 3:
+          return const AdminReservationsScreen();
+        case 4:
+          return const AdminTimeSlotsScreen();
+        case 5:
+          return const AdminHolidaysScreen();
+        case 6:
+          return const AdminRestrictionsScreen();
+        case 7:
+          return const AdminReportsScreen();
+        case 8:
+          return const AdminActivityScreen();
+        case 9:
+          return const ServerDatabaseScreen();
+        case 10:
+          return CalendarScreen(currentUser: widget.currentUser);
+        default:
+          return const AdminDashboardScreen();
+      }
+    } else {
+      switch (_currentNavIndex) {
+        case 0:
+          return CalendarScreen(currentUser: widget.currentUser);
+        case 1:
+          return const HistoryScreen();
+        case 2:
+          return ProfileScreen(currentUser: widget.currentUser);
+        case 3:
+          return const AboutScreen();
+        default:
+          return CalendarScreen(currentUser: widget.currentUser);
+      }
     }
   }
 }
