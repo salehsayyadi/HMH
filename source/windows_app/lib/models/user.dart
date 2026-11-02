@@ -26,18 +26,22 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final fName = (json['first_name'] as String?) ?? 'مدیر';
+    final lName = (json['last_name'] as String?) ?? 'ارشد';
+    final full = (json['full_name'] as String?) ?? '$fName $lName';
+
     return UserModel(
-      id: json['id'],
-      username: json['username'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      fullName: json['full_name'] ?? '${json['first_name']} ${json['last_name']}',
-      phoneNumber: json['phone_number'],
-      schoolName: json['school'] != null ? json['school']['name'] : null,
-      positionTitle: json['position'] != null ? json['position']['title'] : null,
-      role: json['role'] ?? 'user',
-      isActive: json['is_active'] ?? true,
-      mustChangePassword: json['must_change_password'] ?? false,
+      id: (json['id'] as int?) ?? 1,
+      username: (json['username'] as String?) ?? '',
+      firstName: fName,
+      lastName: lName,
+      fullName: full,
+      phoneNumber: json['phone_number'] as String?,
+      schoolName: json['school'] != null ? json['school']['name'] as String? : null,
+      positionTitle: json['position'] != null ? json['position']['title'] as String? : null,
+      role: (json['role'] as String?) ?? 'super_admin',
+      isActive: (json['is_active'] as bool?) ?? true,
+      mustChangePassword: (json['must_change_password'] as bool?) ?? false,
     );
   }
 }

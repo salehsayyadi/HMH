@@ -190,6 +190,8 @@ class ApiService {
         'user': {
           'id': 1,
           'username': '123IMHModirkol@1090',
+          'first_name': 'مدیر',
+          'last_name': 'ارشد',
           'full_name': 'مدیر ارشد سامانه (حالت پیکربندی آفلاین)',
           'role': 'super_admin',
           'phone_number': '09130000000',
@@ -220,6 +222,8 @@ class ApiService {
       return {
         'id': 1,
         'username': '123IMHModirkol@1090',
+        'first_name': 'مدیر',
+        'last_name': 'ارشد',
         'full_name': 'مدیر ارشد سامانه (حالت پیکربندی آفلاین)',
         'role': 'super_admin',
         'phone_number': '09130000000',

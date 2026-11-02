@@ -8,6 +8,7 @@ import 'profile_screen.dart';
 import 'about_screen.dart';
 import 'login_screen.dart';
 import 'server_settings_modal.dart';
+import 'server_database_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -19,7 +20,18 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentNavIndex = 0; // 0: Calendar, 1: History, 2: Profile, 3: About
+  late int _currentNavIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // If in offline emergency configuration mode, start directly in Server & DB settings
+    if (ApiService.isOfflineEmergencyMode || widget.currentUser.role == 'super_admin') {
+      _currentNavIndex = ApiService.isOfflineEmergencyMode ? 4 : 0;
+    } else {
+      _currentNavIndex = 0;
+    }
+  }
 
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
@@ -58,16 +70,10 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _openServerSettings() async {
-    final changed = await ServerSettingsModal.show(context);
-    if (changed == true) {
-      setState(() {});
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isOffline = ApiService.isOfflineEmergencyMode;
+    final isSuperAdmin = widget.currentUser.role == 'super_admin';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -118,7 +124,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.currentUser.positionTitle ?? 'مدیر ارشد سامانه',
+                          widget.currentUser.positionTitle ?? (isSuperAdmin ? 'مدیر ارشد سیستم' : 'معاون اجرایی'),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -127,7 +133,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          widget.currentUser.schoolName ?? 'مدیریت مرکزی موسسه',
+                          widget.currentUser.schoolName ?? (isSuperAdmin ? 'مدیریت مرکزی موسسه' : 'مدرسه امام حسین (ع)'),
                           style: const TextStyle(
                             fontSize: 10.5,
                             color: AppColors.secondaryText,
@@ -138,7 +144,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
 
-                  // Navigation Menu (4 items per Part 12 + Server Settings)
+                  // Navigation Menu
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
@@ -151,53 +157,18 @@ class _MainScreenState extends State<MainScreen> {
                           _buildNavItem(2, 'پروفایل کاربری', Icons.person_outline),
                           const SizedBox(height: 6),
                           _buildNavItem(3, 'درباره برنامه', Icons.info_outline),
-                          const SizedBox(height: 14),
-                          const Divider(color: AppColors.cardBorder, height: 1),
-                          const SizedBox(height: 14),
 
-                          // Direct Server Settings button in sidebar
-                          InkWell(
-                            onTap: _openServerSettings,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                              decoration: BoxDecoration(
-                                color: isOffline ? Colors.amber.shade100 : AppColors.veryLightGreen,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isOffline ? Colors.amber.shade400 : AppColors.cardBorder,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.settings_ethernet_rounded,
-                                    size: 19,
-                                    color: isOffline ? Colors.amber.shade900 : AppColors.primaryGreen,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'تنظیمات سرور',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: isOffline ? Colors.amber.shade900 : AppColors.darkGreen,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isOffline ? Colors.amber.shade800 : AppColors.primaryGreen,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          if (isSuperAdmin) ...[
+                            const SizedBox(height: 14),
+                            const Divider(color: AppColors.cardBorder, height: 1),
+                            const SizedBox(height: 14),
+                            _buildNavItem(
+                              4,
+                              'تنظیمات سرور و دیتابیس',
+                              Icons.storage_rounded,
+                              isHighlighted: isOffline,
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -261,8 +232,8 @@ class _MainScreenState extends State<MainScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'حالت پیکربندی آفلاین مدیر کل فعال است: سرور در آدرس «${ApiService.baseUrl}» در دسترس نیست. '
-                                'لطفاً از طریق دکمه مقابل آدرس سرور مرکزی را بررسی و تست فرمایید.',
+                                'حالت پیکربندی آفلاین مدیر کل فعال است: سرور یا دیتابیس در آدرس «${ApiService.baseUrl}» در دسترس نیست. '
+                                'می‌توانید اطلاعات سرور و پایگاه‌داده را در بخش «تنظیمات سرور و دیتابیس» اصلاح و آزمایش فرمایید.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.amber.shade900,
@@ -272,9 +243,13 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             const SizedBox(width: 12),
                             ElevatedButton.icon(
-                              onPressed: _openServerSettings,
+                              onPressed: () {
+                                setState(() {
+                                  _currentNavIndex = 4;
+                                });
+                              },
                               icon: const Icon(Icons.settings, size: 16),
-                              label: const Text('پیکربندی سرور', style: TextStyle(fontSize: 11)),
+                              label: const Text('تنظیمات دیتابیس', style: TextStyle(fontSize: 11)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber.shade800,
                                 foregroundColor: Colors.white,
@@ -299,7 +274,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String title, IconData icon) {
+  Widget _buildNavItem(int index, String title, IconData icon, {bool isHighlighted = false}) {
     final isSelected = _currentNavIndex == index;
     return InkWell(
       onTap: () {
@@ -311,25 +286,43 @@ class _MainScreenState extends State<MainScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryGreen : Colors.transparent,
+          color: isSelected
+              ? AppColors.primaryGreen
+              : (isHighlighted ? Colors.amber.shade100 : Colors.transparent),
           borderRadius: BorderRadius.circular(12),
+          border: isHighlighted && !isSelected ? Border.all(color: Colors.amber.shade400) : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
               size: 19,
-              color: isSelected ? Colors.white : AppColors.secondaryText,
+              color: isSelected
+                  ? Colors.white
+                  : (isHighlighted ? Colors.amber.shade900 : AppColors.secondaryText),
             ),
             const SizedBox(width: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.mainText,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : (isHighlighted ? Colors.amber.shade900 : AppColors.mainText),
+                ),
               ),
             ),
+            if (isHighlighted && !isSelected)
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.amber.shade800,
+                ),
+              ),
           ],
         ),
       ),
@@ -346,6 +339,8 @@ class _MainScreenState extends State<MainScreen> {
         return ProfileScreen(currentUser: widget.currentUser);
       case 3:
         return const AboutScreen();
+      case 4:
+        return const ServerDatabaseScreen();
       default:
         return CalendarScreen(currentUser: widget.currentUser);
     }
