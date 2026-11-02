@@ -2,12 +2,14 @@ import pytest
 import pytest_asyncio
 import os
 import asyncio
+from pathlib import Path
 from datetime import date, timedelta
 from httpx import AsyncClient, ASGITransport
 
+db_file = Path(__file__).parent / "test_suite.db"
 os.environ["DATABASE_ENGINE"] = "sqlite"
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///d:/IMH/source/backend/test_suite.db"
-os.environ["PYTHONPATH"] = "d:/IMH/source/backend"
+os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file.as_posix()}"
+os.environ["PYTHONPATH"] = str(Path(__file__).parent.parent)
 
 from app.main import app
 from app.core.database import engine, Base, AsyncSessionLocal
