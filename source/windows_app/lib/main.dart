@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/constants/colors.dart';
@@ -6,7 +7,16 @@ import 'models/user.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
+  HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
   await ApiService.init();
   runApp(const HMHApp());
@@ -61,11 +71,11 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    // Add small visual delay so splash isn't just a flicker (600ms)
-    await Future.delayed(const Duration(milliseconds: 600));
+    // Smooth, instant transition without annoying freezing
+    await Future.delayed(const Duration(milliseconds: 300));
 
     try {
-      final token = await ApiService.getToken().timeout(const Duration(milliseconds: 1000), onTimeout: () => null);
+      final token = await ApiService.getToken().timeout(const Duration(milliseconds: 500), onTimeout: () => null);
       if (token == null || token.isEmpty || token.startsWith('offline_')) {
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
@@ -74,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
-      final res = await ApiService.getMe().timeout(const Duration(milliseconds: 1200));
+      final res = await ApiService.getMe().timeout(const Duration(milliseconds: 1000));
       final user = UserModel.fromJson(res);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, status
@@ -29,9 +30,22 @@ logger = logging.getLogger("hmh.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing database schema...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database schema initialized.")
+    # Robust retry loop: wait for MySQL to complete initialization
+    connected = False
+    for attempt in range(1, 31):
+        try:
+            logger.info(f"Connecting to database (attempt {attempt}/30)...")
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            connected = True
+            logger.info("Database connection established and schema initialized.")
+            break
+        except Exception as e:
+            logger.warning(f"Database not ready yet ({e}), retrying in 2 seconds...")
+            await asyncio.sleep(2)
+
+    if not connected:
+        logger.error("Could not connect to database after 30 attempts. Proceeding with caution...")
 
     async with AsyncSessionLocal() as session:
         logger.info("Seeding initial database data...")

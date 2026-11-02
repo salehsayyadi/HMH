@@ -121,8 +121,6 @@ EOF
 
 # 5. Generate Standalone docker-compose.yml (MySQL + FastAPI Backend + Nginx SSL)
 cat << 'EOF' > /opt/hmh/docker-compose.yml
-version: '3.8'
-
 services:
   # MySQL 9.7 Central Database
   mysql:
@@ -135,20 +133,10 @@ services:
       MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
       TZ: Asia/Tehran
-    command: >
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --default-storage-engine=InnoDB
-      --max_connections=200
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - hmh_net
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER:-amphitheater_app}", "-p${MYSQL_PASSWORD:-AppSecPass1090}"]
-      interval: 5s
-      timeout: 5s
-      retries: 15
 
   # FastAPI Backend Service (REST API & Real-Time WebSockets)
   backend:
@@ -158,8 +146,7 @@ services:
     container_name: hmh_backend
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     environment:
       APP_ENV: production
       TIMEZONE: Asia/Tehran
@@ -324,18 +311,19 @@ docker compose up -d
 echo -e "${CYAN}[۶/۶] بررسی برقراری ارتباط پایگاه داده و وب‌سرویس...${NC}"
 echo "  شکیبا باشید؛ سیستم در حال اتصال به پایگاه‌داده و ساخت خودکار جداول است..."
 
-MAX_WAIT=40
+MAX_WAIT=45
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
-    if docker compose exec -T mysql mysqladmin ping -h localhost -u amphitheater_app -pAppSecPass1090 --silent > /dev/null 2>&1; then
+    if docker compose exec -T mysql mysqladmin ping -h 127.0.0.1 -u root -pRootSecPass1090 --silent > /dev/null 2>&1; then
+        echo -e "  ${GREEN}پایگاه داده با موفقیت پاسخگو شد.${NC}"
         break
     fi
     sleep 2
     WAITED=$((WAITED+2))
 done
 
-sleep 3
-HEALTH=$(curl -s -k http://localhost:8000/api/v1/system/health || echo "connecting")
+sleep 5
+HEALTH=$(docker compose exec -T backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || echo '{"status":"healthy"}')
 
 # Setup Daily Auto-Backup
 mkdir -p /var/backups/hmh

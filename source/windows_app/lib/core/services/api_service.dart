@@ -163,13 +163,17 @@ class ApiService {
       }
     } on SocketException catch (_) {
       return _handleOfflineLoginFallback(username, password);
+    } on HandshakeException catch (_) {
+      return _handleOfflineLoginFallback(username, password);
+    } on TlsException catch (_) {
+      return _handleOfflineLoginFallback(username, password);
     } on http.ClientException catch (_) {
       return _handleOfflineLoginFallback(username, password);
     } on TimeoutException catch (_) {
       return _handleOfflineLoginFallback(username, password);
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.contains('Socket') || msg.contains('refused') || msg.contains('Connection') || msg.contains('errno')) {
+      if (msg.contains('Socket') || msg.contains('refused') || msg.contains('Connection') || msg.contains('errno') || msg.contains('Handshake') || msg.contains('SSL')) {
         return _handleOfflineLoginFallback(username, password);
       }
       rethrow;
@@ -239,7 +243,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    );
+    ).timeout(const Duration(seconds: 3));
 
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes));
@@ -274,7 +278,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    );
+    ).timeout(const Duration(seconds: 4));
 
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes));
@@ -306,7 +310,7 @@ class ApiService {
         'title': title,
         'description': description,
       }),
-    );
+    ).timeout(const Duration(seconds: 4));
 
     final data = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode == 201) {
@@ -328,7 +332,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    );
+    ).timeout(const Duration(seconds: 4));
 
     if (response.statusCode != 200) {
       final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -348,7 +352,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    );
+    ).timeout(const Duration(seconds: 4));
 
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes));
