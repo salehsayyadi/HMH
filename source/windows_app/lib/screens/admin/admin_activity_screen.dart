@@ -82,9 +82,9 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('تاریخچه فعالیت‌ها و لاگ امنیتی سیستم (Audit Trail)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
+                    Text('تاریخچه فعالیت‌ها و رویدادهای سامانه', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('ردیابی تغییرات، رخدادهای ورود، ثبت و لغو رزروها با ثبت زمان و آدرس IP کاربر در پایگاه داده', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('گزارش جامع وقایع، نشست‌های ورود، ثبت و تغییرات درخواست‌های رزرواسیون به تفکیک زمان و کاربر', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
@@ -177,12 +177,12 @@ class _AdminActivityScreenState extends State<AdminActivityScreen> {
                                   Icon(Icons.history_outlined, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    'هیچ رخدادی در تاریخچه سامانه ثبت نشده است.',
+                                    'تاکنون رویدادی در تاریخچه سامانه ثبت نگردیده است.',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                   ),
                                   const SizedBox(height: 8),
                                   const Text(
-                                    'پایگاه داده در وضعیت خام قرار دارد. کلیه ورودها، ایجاد کاربران، ثبت و لغو رزروها پس از انجام به‌صورت خودکار در این جدول ذخیره می‌شوند.',
+                                    'کلیه نشست‌های کاری، ثبت یا ابطال نوبت‌ها به‌صورت خودکار و مستمر در این بخش مستندسازی می‌گردند.',
                                     style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                     textAlign: TextAlign.center,
                                   ),

@@ -214,7 +214,7 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                   children: [
                     Text('مدیریت ساعت‌ها و سانس‌های سالن آمفی‌تئاتر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('تنظیم ۵ بازه زمانی استاندارد روزانه، تغییر ساعات شروع و پایان، و فعال/غیرفعال‌سازی در دیتابیس', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('تنظیم ۵ بازه زمانی استاندارد روزانه، تعیین ساعات شروع و پایان، و مدیریت وضعیت سانس‌های سالن', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),

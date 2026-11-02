@@ -84,7 +84,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   children: [
                     Text('گزارش‌ها و تحلیل آماری عملکرد مدارس', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('تحلیل جامع استفاده مدارس از سالن آمفی‌تئاتر مرکزی و خروجی گزارش اکسل از پایگاه داده', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('تحلیل جامع بهره‌مندی مدارس از سالن آمفی‌تئاتر مرکزی و دریافت خروجی آماری', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
@@ -92,7 +92,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('فایل گزارش اکسل (XLSX) بر اساس داده‌های فعلی پایگاه‌داده ایجاد شد.'),
+                        content: Text('گزارش آماری اکسل با موفقیت ایجاد گردید.'),
                         backgroundColor: AppColors.primaryGreen,
                       ),
                     );

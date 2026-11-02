@@ -85,7 +85,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               children: [
                 Icon(Icons.person_add_alt_1_rounded, color: AppColors.primaryGreen, size: 24),
                 SizedBox(width: 10),
-                Text('تعریف کاربر سازمانی جدید در پایگاه داده', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('ثبت کاربر سازمانی جدید', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               ],
             ),
             content: SizedBox(
@@ -295,14 +295,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   children: [
                     Text('مدیریت کاربران و دسترسی‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('تعریف کاربران مدارس، ویرایش مشخصات، تنظیم دسترسی و بازنشانی رمز عبور در دیتابیس', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('تعریف کاربران مدارس، ویرایش مشخصات و مدیریت سطوح دسترسی کادر آموزشی', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: _showAddUserDialog,
                   icon: const Icon(Icons.person_add, size: 20),
-                  label: const Text('افزودن کاربر جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  label: const Text('ثبت کاربر جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
@@ -382,12 +382,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                   Icon(Icons.people_outline_rounded, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    'هیچ کاربری در پایگاه داده ثبت نشده است.',
+                                    'اطلاعات کاربری در سامانه ثبت نگردیده است.',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                   ),
                                   const SizedBox(height: 8),
                                   const Text(
-                                    'پایگاه داده در وضعیت خام قرار دارد. جهت ایجاد دسترسی برای کادر مدارس، بر روی دکمه زیر کلیک نمایید.',
+                                    'جهت تعریف کاربران مجاز و صدور دسترسی برای کادر آموزشی مدارس، بر روی دکمه زیر کلیک فرمایید.',
                                     style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                     textAlign: TextAlign.center,
                                   ),
@@ -395,7 +395,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                   ElevatedButton.icon(
                                     onPressed: _showAddUserDialog,
                                     icon: const Icon(Icons.person_add_rounded, size: 20),
-                                    label: const Text('افزودن اولین کاربر', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                    label: const Text('ثبت اولین کاربر سازمانی', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColors.primaryGreen,
                                       foregroundColor: Colors.white,

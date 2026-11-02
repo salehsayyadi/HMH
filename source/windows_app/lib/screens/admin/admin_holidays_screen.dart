@@ -63,7 +63,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
               children: [
                 Icon(Icons.event_busy_rounded, color: AppColors.primaryGreen, size: 24),
                 SizedBox(width: 10),
-                Text('افزودن مناسبت یا تعطیلی جدید در پایگاه داده', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('ثبت مناسبت یا تعطیلی جدید در تقویم', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               ],
             ),
             content: SizedBox(
@@ -135,7 +135,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                 ),
                 child: isSaving
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('ثبت تعطیلی در دیتابیس', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                    : const Text('ثبت تعطیلی در تقویم', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -168,14 +168,14 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                   children: [
                     Text('مدیریت تقویم تعطیلات و مناسبت‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('مشاهده و تعریف تعطیلات و مناسبت‌های خاص موسسه امام حسین (ع) در پایگاه داده', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('مشاهده و ثبت تعطیلات رسمی و مناسبت‌های اختصاصی موسسه امام حسین (ع)', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: _showAddDialog,
                   icon: const Icon(Icons.add_rounded, size: 20),
-                  label: const Text('افزودن تعطیلی جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  label: const Text('ثبت تعطیلی جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
@@ -211,12 +211,12 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                                   Icon(Icons.event_available_outlined, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    'هیچ مناسبت یا تعطیلی در پایگاه داده ثبت نشده است.',
+                                    'مناسبت یا تعطیلی خاصی ثبت نگردیده است.',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                   ),
                                   const SizedBox(height: 8),
                                   const Text(
-                                    'پایگاه داده در وضعیت خام قرار دارد. جهت ثبت روزهای تعطیل یا مناسبت‌ها بر روی دکمه زیر کلیک نمایید.',
+                                    'جهت مسدودسازی روزهای تعطیل یا ثبت مناسبت‌های ویژه در تقویم، بر روی دکمه زیر کلیک فرمایید.',
                                     style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                     textAlign: TextAlign.center,
                                   ),

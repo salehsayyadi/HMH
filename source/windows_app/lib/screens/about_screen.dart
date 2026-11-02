@@ -62,32 +62,31 @@ class _AboutScreenState extends State<AboutScreen> {
               Row(
                 children: [
                   Container(
-                    width: 72,
                     height: 72,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.veryLightGreen,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.cardBorder),
                     ),
-                    child: const Icon(Icons.account_balance, color: AppColors.primaryGreen, size: 38),
+                    child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
                   ),
                   const SizedBox(width: 20),
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد',
+                        'سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مرکزی',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس — نسخه ویندوز',
-                        style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                        'موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد',
+                        style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'نسخه برنامه: ۱.۰.۰ (تولید رسمی)',
+                        'نسخه تولیدی سامانه: ۱.۰.۶',
                         style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
                       ),
                     ],

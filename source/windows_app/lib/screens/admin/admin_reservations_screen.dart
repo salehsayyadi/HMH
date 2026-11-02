@@ -245,7 +245,7 @@ class _AdminReservationsScreenState extends State<AdminReservationsScreen> {
                   children: [
                     Text('مدیریت کلیه رزروهای آمفی‌تئاتر', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('مشاهده تقویم و فهرست تمام رزروهای مدارس، تأیید، ابطال و مدیریت تغییرات در دیتابیس', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('مشاهده تقویم و فهرست کلیه رزروهای مدارس، تأیید، ابطال و مدیریت رویدادهای سالن', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
@@ -351,12 +351,12 @@ class _AdminReservationsScreenState extends State<AdminReservationsScreen> {
                                   Icon(Icons.event_busy_outlined, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    'هیچ رزروی در پایگاه داده ثبت نشده است.',
+                                    'در حال حاضر رزروی در سامانه ثبت نگردیده است.',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                   ),
                                   const SizedBox(height: 8),
                                   const Text(
-                                    'پایگاه‌داده سامانه در وضعیت خام قرار دارد. کلیه رزروهای ثبت‌شده توسط مدارس به‌صورت زنده در این جدول ثبت و مدیریت خواهند شد.',
+                                    'کلیه درخواست‌ها و نوبت‌های ثبت‌شده توسط کادر آموزشی مدارس، پس از ثبت در تقویم، در این جدول نمایش و مدیریت می‌گردند.',
                                     style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                     textAlign: TextAlign.center,
                                   ),

@@ -121,7 +121,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'نمای کلی آمار تحلیلی و وضعیت لحظه‌ای سالن آمفی‌تئاتر مرکزی مدارس امام حسین (ع) یزد (برخط از پایگاه داده)',
+                          'نمای کلی آمار تحلیلی و وضعیت لحظه‌ای سالن آمفی‌تئاتر مرکزی مدارس امام حسین (ع) یزد',
                           style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                         ),
                       ],
@@ -358,7 +358,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'آخرین رخدادها و رزروهای ثبت‌شده در دیتابیس',
+                    'آخرین رویدادها و درخواست‌های ثبت‌شده در سامانه',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                   ),
                   const SizedBox(height: 16),
@@ -372,12 +372,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           Icon(Icons.history_toggle_off_rounded, size: 48, color: AppColors.secondaryText.withOpacity(0.5)),
                           const SizedBox(height: 12),
                           const Text(
-                            'هیچ رخدادی در پایگاه داده ثبت نشده است.',
+                            'تاکنون رویدادی در سامانه ثبت نگردیده است.',
                             style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.secondaryText),
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'تمامی فعالیت‌ها، رزروها و لغوهای مدارس به‌صورت زنده پس از ثبت در دیتابیس در این جدول نمایش داده می‌شوند.',
+                            'تمامی فعالیت‌ها و درخواست‌های ثبت‌شده توسط مدارس، به‌صورت لحظه‌ای در این بخش منعکس می‌گردند.',
                             style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
                           ),
                         ],

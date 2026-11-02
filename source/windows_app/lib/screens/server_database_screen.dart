@@ -159,9 +159,9 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                   ),
 
                   // Connection status pills
-                  _buildStatusPill('اتصال دیتابیس', _dbConnected),
+                  _buildStatusPill('پایگاه داده', _dbConnected),
                   const SizedBox(width: 10),
-                  _buildStatusPill('اتصال API', _apiConnected),
+                  _buildStatusPill('سرویس مرکزی', _apiConnected),
                 ],
               ),
               const SizedBox(height: 20),

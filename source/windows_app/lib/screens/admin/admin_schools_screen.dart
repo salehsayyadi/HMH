@@ -53,10 +53,8 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
 
   void _showAddSchoolDialog() {
     final nameCtrl = TextEditingController();
-    final codeCtrl = TextEditingController();
     final repCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    final addrCtrl = TextEditingController();
     bool isSaving = false;
 
     showDialog(
@@ -70,11 +68,11 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
               children: [
                 Icon(Icons.add_business_rounded, color: AppColors.primaryGreen, size: 24),
                 SizedBox(width: 10),
-                Text('افزودن مدرسه یا شعبه جدید در پایگاه داده', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text('ثبت واحد آموزشی جدید', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               ],
             ),
             content: SizedBox(
-              width: 480,
+              width: 440,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -82,58 +80,29 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                     TextField(
                       controller: nameCtrl,
                       decoration: InputDecoration(
-                        labelText: 'نام رسمی مدرسه',
+                        labelText: 'نام مدرسه یا واحد آموزشی',
                         labelStyle: const TextStyle(fontSize: 13),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: codeCtrl,
-                            textDirection: TextDirection.ltr,
-                            decoration: InputDecoration(
-                              labelText: 'کد شناسه (مانند SCH-101)',
-                              labelStyle: const TextStyle(fontSize: 13),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: phoneCtrl,
-                            keyboardType: TextInputType.phone,
-                            textDirection: TextDirection.ltr,
-                            decoration: InputDecoration(
-                              labelText: 'شماره تماس',
-                              labelStyle: const TextStyle(fontSize: 13),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: 'شماره تماس',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     TextField(
                       controller: repCtrl,
                       decoration: InputDecoration(
-                        labelText: 'نام مدیر یا نماینده تام‌الاختیار',
-                        labelStyle: const TextStyle(fontSize: 13),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: addrCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'آدرس پستی در استان یزد',
+                        labelText: 'نام مدیر مدرسه',
                         labelStyle: const TextStyle(fontSize: 13),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -152,11 +121,12 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                 onPressed: isSaving ? null : () async {
                   if (nameCtrl.text.isNotEmpty) {
                     setDlgState(() => isSaving = true);
+                    final generatedCode = 'SCH-${_schools.length + 101}';
                     final newSchool = {
                       'id': _schools.length + 1,
                       'name': nameCtrl.text.trim(),
-                      'code': codeCtrl.text.trim().isEmpty ? 'SCH-${_schools.length + 101}' : codeCtrl.text.trim(),
-                      'address': addrCtrl.text.trim(),
+                      'code': generatedCode,
+                      'address': 'یزد',
                       'representative': repCtrl.text.trim(),
                       'phone': phoneCtrl.text.trim(),
                       'usersCount': 0,
@@ -167,8 +137,8 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                     try {
                       await ApiService.createSchool({
                         'name': nameCtrl.text.trim(),
-                        'code': newSchool['code'],
-                        'address': addrCtrl.text.trim(),
+                        'code': generatedCode,
+                        'address': 'یزد',
                         'phone_number': phoneCtrl.text.trim(),
                         'contact_person': repCtrl.text.trim(),
                       });
@@ -180,7 +150,7 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                     if (mounted) {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('مدرسه جدید با موفقیت اضافه شد.'), backgroundColor: AppColors.primaryGreen),
+                        const SnackBar(content: Text('واحد آموزشی جدید با موفقیت در سامانه ثبت گردید.'), backgroundColor: AppColors.primaryGreen),
                       );
                     }
                   }
@@ -193,7 +163,7 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                 ),
                 child: isSaving
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('ثبت مدرسه در دیتابیس', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                    : const Text('ثبت در سامانه', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -224,16 +194,16 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('مدیریت مدارس و شعب تابعه', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
+                    Text('مدیریت مدارس و واحدهای آموزشی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('مشاهده و ویرایش مشخصات مدارس ۶ گانه موسسه امام حسین (ع) یزد در پایگاه داده مرکزی', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('ساماندهی، ثبت و به‌روزرسانی مشخصات مدارس و واحدهای آموزشی تحت پوشش موسسه حضرت امام حسین (ع)', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: _showAddSchoolDialog,
                   icon: const Icon(Icons.add_business, size: 20),
-                  label: const Text('افزودن مدرسه جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  label: const Text('ثبت واحد آموزشی جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
@@ -267,12 +237,12 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                                 Icon(Icons.school_outlined, size: 64, color: AppColors.secondaryText.withOpacity(0.4)),
                                 const SizedBox(height: 16),
                                 const Text(
-                                  'هیچ مدرسه‌ای در پایگاه داده ثبت نشده است.',
+                                  'اطلاعات مدرسه‌ای در سامانه ثبت نگردیده است.',
                                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.mainText),
                                 ),
                                 const SizedBox(height: 8),
                                 const Text(
-                                  'پایگاه داده سامانه در وضعیت خام است. برای آغاز مدیریت، لطفاً اولین مدرسه را تعریف نمایید.',
+                                  'جهت صدور دسترسی و بهره‌مندی از سالن آمفی‌تئاتر، لطفاً اطلاعات واحدهای آموزشی تابعه را ثبت فرمایید.',
                                   style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
                                   textAlign: TextAlign.center,
                                 ),
@@ -280,7 +250,7 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                                 ElevatedButton.icon(
                                   onPressed: _showAddSchoolDialog,
                                   icon: const Icon(Icons.add_business_rounded, size: 20),
-                                  label: const Text('افزودن اولین مدرسه', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  label: const Text('ثبت اولین واحد آموزشی', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primaryGreen,
                                     foregroundColor: Colors.white,

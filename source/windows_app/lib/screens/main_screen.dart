@@ -15,7 +15,6 @@ import 'admin/admin_schools_screen.dart';
 import 'admin/admin_reservations_screen.dart';
 import 'admin/admin_time_slots_screen.dart';
 import 'admin/admin_holidays_screen.dart';
-import 'admin/admin_restrictions_screen.dart';
 import 'admin/admin_reports_screen.dart';
 import 'admin/admin_activity_screen.dart';
 
@@ -95,6 +94,23 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: Column(
                 children: [
+                  // Official Institute Logo Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    decoration: const BoxDecoration(
+                      color: AppColors.white,
+                      border: Border(bottom: BorderSide(color: AppColors.cardBorder, width: 1)),
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+
                   // User Profile Box
                   Container(
                     width: double.infinity,
@@ -229,7 +245,7 @@ class _MainScreenState extends State<MainScreen> {
                             ElevatedButton.icon(
                               onPressed: () {
                                 if (isSuperAdmin) {
-                                  setState(() => _currentNavIndex = 9); // Settings index
+                                  setState(() => _currentNavIndex = 8); // Settings index
                                 } else {
                                   ServerSettingsModal.show(context);
                                 }
@@ -260,7 +276,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// 10 Section Super Administrator Menu + Calendar View
+  /// 9 Section Super Administrator Menu + Calendar View
   List<Widget> _buildSuperAdminNavItems() {
     return [
       _buildNavItem(0, 'داشبورد مدیریتی', Icons.dashboard_rounded),
@@ -275,17 +291,15 @@ class _MainScreenState extends State<MainScreen> {
       const SizedBox(height: 4),
       _buildNavItem(5, 'مدیریت تعطیلات', Icons.event_busy_rounded),
       const SizedBox(height: 4),
-      _buildNavItem(6, 'مدیریت محدودیت‌ها', Icons.gpp_bad_rounded),
+      _buildNavItem(6, 'گزارش‌ها و آمار', Icons.bar_chart_rounded),
       const SizedBox(height: 4),
-      _buildNavItem(7, 'گزارش‌ها و آمار', Icons.bar_chart_rounded),
+      _buildNavItem(7, 'تاریخچه فعالیت‌ها', Icons.history_rounded),
       const SizedBox(height: 4),
-      _buildNavItem(8, 'تاریخچه فعالیت‌ها', Icons.history_rounded),
-      const SizedBox(height: 4),
-      _buildNavItem(9, 'تنظیمات سامانه', Icons.settings_rounded),
+      _buildNavItem(8, 'تنظیمات سامانه', Icons.settings_rounded),
       const SizedBox(height: 8),
       const Divider(height: 1, color: AppColors.cardBorder),
       const SizedBox(height: 8),
-      _buildNavItem(10, 'تقویم رزرو سالن (نمای مدارس)', Icons.calendar_month_rounded, isSecondary: true),
+      _buildNavItem(9, 'تقویم رزرو سالن (نمای مدارس)', Icons.calendar_month_rounded, isSecondary: true),
     ];
   }
 
@@ -364,14 +378,12 @@ class _MainScreenState extends State<MainScreen> {
         case 5:
           return const AdminHolidaysScreen();
         case 6:
-          return const AdminRestrictionsScreen();
-        case 7:
           return const AdminReportsScreen();
-        case 8:
+        case 7:
           return const AdminActivityScreen();
-        case 9:
+        case 8:
           return const ServerDatabaseScreen();
-        case 10:
+        case 9:
           return CalendarScreen(currentUser: widget.currentUser);
         default:
           return const AdminDashboardScreen();

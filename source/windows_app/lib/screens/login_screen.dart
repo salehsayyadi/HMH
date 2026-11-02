@@ -148,57 +148,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Circular Organization Emblem Badge
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.veryLightGreen,
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_rounded,
-                          color: AppColors.primaryGreen,
-                          size: 38,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Organization Title
-                      const Text(
-                        'موسسه خیریه فرهنگی آموزشی',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'حضرت امام حسین (ع) یزد',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.darkGreen,
+                      // Official Institute Logo
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          height: 72,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 6),
+
                       const Text(
-                        'سامانه رزرو آمفی‌تئاتر مدارس',
+                        'سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primaryGreen,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       const Text(
-                        'ورود کاربران جهت مدیریت و رزرو آنلاین آمفی‌تئاتر',
+                        'ورود کاربران سازمانی و مدیریت مدارس',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: AppColors.secondaryText,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 22),
 
