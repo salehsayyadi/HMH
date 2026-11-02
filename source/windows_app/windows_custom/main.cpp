@@ -41,13 +41,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   Win32Window::Point origin(x, y);
   Win32Window::Size size(windowWidth, windowHeight);
 
-  if (!window.Create("HMH Amphitheater Reservation", origin, size)) {
+  // Persian title encoded via explicit 16-bit Unicode escape literals
+  // to guarantee exact rendering without any compiler ANSI/Windows-1252 mojibake
+  const wchar_t* persianTitle = L"\u0633\u0627\u0645\u0627\u0646\u0647 \u0631\u0632\u0631\u0648 \u0622\u0645\u0641\u06cc\u200c\u062a\u0626\u0627\u062a\u0631 \u0645\u062f\u0627\u0631\u0633 \u0627\u0645\u0627\u0645 \u062d\u0633\u06cc\u0646 (\u0639) \u06cc\u0632\u062f";
+
+  if (!window.Create(persianTitle, origin, size)) {
     return EXIT_FAILURE;
   }
 
-  // Set the Persian title using native Win32 Wide API with explicit Unicode escape literals
-  // to prevent any compiler ANSI/Windows-1252 character conversion issues (mojibake)
-  ::SetWindowTextW(window.GetHandle(), L"\u0633\u0627\u0645\u0627\u0646\u0647 \u0631\u0632\u0631\u0648 \u0622\u0645\u0641\u06cc\u200c\u062a\u0626\u0627\u062a\u0631 \u0645\u062f\u0627\u0631\u0633 \u0627\u0645\u0627\u0645 \u062d\u0633\u06cc\u0646 (\u0639) \u06cc\u0632\u062f");
+  ::SetWindowTextW(window.GetHandle(), persianTitle);
 
   window.SetQuitOnClose(true);
 
