@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -39,9 +42,12 @@ jobs:
           Compress-Archive -Path "app/Windows/Portable/*" -DestinationPath "HMH-Portable-x64.zip" -Force
 
       - name: Install Inno Setup
-        uses: ducksoftware/inno-setup-action@v1.4
-        with:
-          issfile: 'source/deployment/scripts/HMH-Setup.iss'
+        run: choco install innosetup -y
+
+      - name: Compile Windows Setup Installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" source/deployment/scripts/HMH-Setup.iss
 
       - name: Prepare Server & Web ZIPs
         shell: pwsh
