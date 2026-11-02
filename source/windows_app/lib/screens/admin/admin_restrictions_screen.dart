@@ -187,7 +187,7 @@ class _AdminRestrictionsScreenState extends State<AdminRestrictionsScreen> {
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: _showAddRestrictionDialog,
-                  icon: const Icon(Icons.add_shield_rounded, size: 20),
+                  icon: const Icon(Icons.shield_rounded, size: 20),
                   label: const Text('افزودن محدودیت جدید', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
@@ -295,7 +295,7 @@ class _AdminRestrictionsScreenState extends State<AdminRestrictionsScreen> {
                                 const SizedBox(height: 20),
                                 ElevatedButton.icon(
                                   onPressed: _showAddRestrictionDialog,
-                                  icon: const Icon(Icons.add_shield_rounded, size: 20),
+                                  icon: const Icon(Icons.shield_rounded, size: 20),
                                   label: const Text('افزودن اولین قانون / محدودیت', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primaryGreen,
