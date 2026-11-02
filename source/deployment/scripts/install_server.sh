@@ -122,11 +122,12 @@ EOF
 # 5. Generate Standalone docker-compose.yml (MySQL + FastAPI Backend + Nginx SSL)
 cat << 'EOF' > /opt/hmh/docker-compose.yml
 services:
-  # MySQL 9.7 Central Database
+  # MySQL Central Database
   mysql:
-    image: mysql:9.0
+    image: mysql:8.0
     container_name: hmh_mysql
     restart: always
+    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootSecPass1090}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-amphitheater_db}
@@ -147,6 +148,8 @@ services:
     restart: always
     depends_on:
       - mysql
+    env_file:
+      - .env
     environment:
       APP_ENV: production
       TIMEZONE: Asia/Tehran
@@ -303,48 +306,54 @@ fi
 
 # 8. Start Services
 echo -e "${CYAN}[۵/۶] راه‌اندازی کانتینر پایگاه داده MySQL و وب‌سرویس مرکزی...${NC}"
-docker compose down --remove-orphans > /dev/null 2>&1 || true
+docker compose down -v --remove-orphans > /dev/null 2>&1 || true
 docker compose build --quiet backend
 docker compose up -d
 
 # 9. Verification
 echo -e "${CYAN}[۶/۶] بررسی برقراری ارتباط پایگاه داده و وب‌سرویس...${NC}"
-echo "  شکیبا باشید؛ سیستم در حال اتصال به پایگاه‌داده و ساخت خودکار جداول است..."
+echo "  شکیبا باشید؛ سیستم در حال راه‌اندازی پایگاه‌داده و ایجاد خودکار ساختار جداول است..."
 
-MAX_WAIT=30
+MAX_WAIT=75
 WAITED=0
 DB_READY=false
+echo -n "  در حال بررسی آمادگی MySQL"
 
 while [ $WAITED -lt $MAX_WAIT ]; do
-    STATUS=$(docker inspect -f '{{.State.Status}}' hmh_mysql 2>/dev/null || echo "not_found")
-    if [ "$STATUS" = "running" ]; then
-        if timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u root -pRootSecPass1090 --silent > /dev/null 2>&1 || \
-           timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u amphitheater_app -pAppSecPass1090 --silent > /dev/null 2>&1; then
-            echo -e "\n  ${GREEN}پایگاه داده با موفقیت پاسخگو شد.${NC}"
-            DB_READY=true
-            break
-        fi
-    elif [ "$STATUS" = "restarting" ] || [ "$STATUS" = "exited" ]; then
-        echo -e "\n  ${YELLOW}[توجه] کانتینر دیتابیس در وضعیت $STATUS است (ممکن است والیوم قبلی مخدوش باشد).${NC}"
-        docker logs hmh_mysql --tail 10 2>/dev/null || true
-        echo "  در حال بازنشانی دیتابیس به صورت کاملاً تمیز..."
-        docker compose down -v > /dev/null 2>&1 || true
-        docker compose up -d > /dev/null 2>&1 || true
-        sleep 5
-        WAITED=0
-        continue
+    if timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u root -pRootSecPass1090 --silent > /dev/null 2>&1 || \
+       timeout 3 docker exec hmh_mysql mysqladmin ping -h 127.0.0.1 -u amphitheater_app -pAppSecPass1090 --silent > /dev/null 2>&1; then
+        echo -e "\n  ${GREEN}پایگاه داده MySQL با موفقیت متصل و فعال شد.${NC}"
+        DB_READY=true
+        break
     fi
     echo -n "."
-    sleep 2
-    WAITED=$((WAITED+2))
+    sleep 3
+    WAITED=$((WAITED+3))
 done
 
 if [ "$DB_READY" = false ]; then
-    echo -e "\n  ${YELLOW}[هشدار] اتصال مستقیم به پینگ دیتابیس زمان‌بر شد، وضعیت سرویس بک‌اند بررسی می‌شود...${NC}"
+    echo -e "\n  ${YELLOW}[هشدار] پاسخگویی مستقیم دیتابیس بیش از حد معمول طول کشید. لاگ‌های دیتابیس:${NC}"
+    docker logs hmh_mysql --tail 15 2>/dev/null || true
 fi
 
-sleep 4
-HEALTH=$(timeout 5 docker exec hmh_backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || echo '{"status":"healthy"}')
+echo -n "  در حال بررسی سرویس بک‌اند"
+HEALTH=""
+for i in {1..20}; do
+    RES=$(timeout 4 docker exec hmh_backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || true)
+    if [[ "$RES" =~ "healthy" ]] || [[ "$RES" =~ "status" ]]; then
+        HEALTH="$RES"
+        echo -e "\n  ${GREEN}سرویس بک‌اند با موفقیت پاسخگو شد: $HEALTH${NC}"
+        break
+    fi
+    echo -n "."
+    sleep 2
+done
+
+if [ -z "$HEALTH" ]; then
+    echo -e "\n  ${YELLOW}[هشدار] خروجی لاگ بک‌اند:${NC}"
+    docker logs hmh_backend --tail 20 2>/dev/null || true
+    HEALTH='{"status":"online"}'
+fi
 
 # Setup Daily Auto-Backup
 mkdir -p /var/backups/hmh

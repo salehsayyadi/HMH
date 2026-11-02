@@ -154,7 +154,19 @@ class ApiService {
           )
           .timeout(const Duration(seconds: 5));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      // Handle server-side 5xx errors (like 502 Bad Gateway, 503, 504)
+      if (response.statusCode >= 500) {
+        return _handleOfflineLoginFallback(username, password);
+      }
+
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(utf8.decode(response.bodyBytes));
+      } catch (_) {
+        // If server returned non-JSON (HTML 502/504 page)
+        return _handleOfflineLoginFallback(username, password);
+      }
+
       if (response.statusCode == 200) {
         await saveTokens(data['access_token'], data['refresh_token']);
         return data;
@@ -171,9 +183,13 @@ class ApiService {
       return _handleOfflineLoginFallback(username, password);
     } on TimeoutException catch (_) {
       return _handleOfflineLoginFallback(username, password);
+    } on FormatException catch (_) {
+      return _handleOfflineLoginFallback(username, password);
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.contains('Socket') || msg.contains('refused') || msg.contains('Connection') || msg.contains('errno') || msg.contains('Handshake') || msg.contains('SSL')) {
+      if (msg.contains('Socket') || msg.contains('refused') || msg.contains('Connection') || 
+          msg.contains('errno') || msg.contains('Handshake') || msg.contains('SSL') || 
+          msg.contains('Format') || msg.contains('Unexpected') || msg.contains('502') || msg.contains('503')) {
         return _handleOfflineLoginFallback(username, password);
       }
       rethrow;
@@ -213,6 +229,11 @@ class ApiService {
         },
       };
     }
+
+    throw Exception(
+      'ارتباط با وب‌سرویس سرور برقرار نشد (پاسخ نامعتبر یا خطای سرور دریافت گردید).\n'
+      'لطفاً از اتصال اینترنت یا فعال بودن وب‌سرویس در بخش «تنظیمات سرور» اطمینان حاصل فرمایید.',
+    );
 
     // برای سایر کاربران، پیام خطای شفاف فارسی همراه با هدایت به تنظیمات سرور نمایش داده می‌شود
     throw Exception(

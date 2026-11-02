@@ -29,9 +29,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   int screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
   int screenHeight = ::GetSystemMetrics(SM_CYSCREEN);
 
-  // Balanced near-square proportion that fits desktop screens comfortably
-  int windowHeight = (screenHeight > 980) ? 920 : static_cast<int>(screenHeight * 0.88);
-  int windowWidth = windowHeight + 80; // square-like ratio (approx 1:1)
+  // Comfortable widescreen proportions fitting both sidebar and management content
+  int windowHeight = (screenHeight > 980) ? 900 : static_cast<int>(screenHeight * 0.88);
+  int windowWidth = (screenWidth > 1400) ? 1220 : static_cast<int>(screenWidth * 0.86);
 
   int x = (screenWidth - windowWidth) / 2;
   int y = (screenHeight - windowHeight) / 2;

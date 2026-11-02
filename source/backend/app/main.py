@@ -32,9 +32,9 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database schema...")
     # Robust retry loop: wait for MySQL to complete initialization
     connected = False
-    for attempt in range(1, 31):
+    for attempt in range(1, 61):
         try:
-            logger.info(f"Connecting to database (attempt {attempt}/30)...")
+            logger.info(f"Connecting to database (attempt {attempt}/60)...")
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             connected = True
@@ -44,13 +44,16 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Database not ready yet ({e}), retrying in 2 seconds...")
             await asyncio.sleep(2)
 
-    if not connected:
-        logger.error("Could not connect to database after 30 attempts. Proceeding with caution...")
-
-    async with AsyncSessionLocal() as session:
-        logger.info("Seeding initial database data...")
-        await init_database_data(session)
-        logger.info("Initial data seeded successfully.")
+    if connected:
+        try:
+            async with AsyncSessionLocal() as session:
+                logger.info("Seeding initial database data...")
+                await init_database_data(session)
+                logger.info("Initial data seeded successfully.")
+        except Exception as e:
+            logger.error(f"Error seeding initial database data: {e}")
+    else:
+        logger.error("Could not connect to database after 60 attempts. Serving in degraded mode.")
 
     yield
     logger.info("Shutting down application...")
