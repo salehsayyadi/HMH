@@ -41,12 +41,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
       setState(() {
         _monthName = data['jalali_month_name'] ?? 'آبان';
         _jalaliYear = data['jalali_year'] ?? 1403;
-        _timeSlots = (data['time_slots'] as List).map((s) => TimeSlotModel.fromJson(s)).toList();
-        _days = (data['days'] as List).map((d) => CalendarDayModel.fromJson(d)).toList();
+        _timeSlots = (data['time_slots'] as List? ?? []).map((s) => TimeSlotModel.fromJson(s)).toList();
+        _days = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = ApiService.isOfflineEmergencyMode
+            ? 'حالت پیکربندی آفلاین فعال است. جهت بارگذاری تقویم زنده، ارتباط با سرور را از بخش تنظیمات برقرار فرمایید.'
+            : e.toString().replaceAll('Exception: ', '');
       });
     } finally {
       setState(() {

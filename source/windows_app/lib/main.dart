@@ -8,6 +8,7 @@ import 'screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.init();
   runApp(const HMHApp());
 }
 

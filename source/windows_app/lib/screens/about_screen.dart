@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
+import 'server_settings_modal.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -144,17 +145,37 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
               const SizedBox(height: 20),
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: _checking ? null : _checkServer,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('بررسی مجدد اتصال به سرور'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryGreen,
-                    side: const BorderSide(color: AppColors.cardBorder),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _checking ? null : _checkServer,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('بررسی مجدد اتصال به سرور'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryGreen,
+                      side: const BorderSide(color: AppColors.cardBorder),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final changed = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => const ServerSettingsModal(),
+                      );
+                      if (changed == true) {
+                        _checkServer();
+                      }
+                    },
+                    icon: const Icon(Icons.settings_ethernet_rounded, size: 16),
+                    label: const Text('تنظیمات اتصال سرور'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 1,
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 36),
