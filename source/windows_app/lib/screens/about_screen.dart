@@ -65,7 +65,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     height: 72,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.veryLightGreen,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.cardBorder),
                     ),
@@ -86,7 +86,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'نسخه تولیدی سامانه: ۱.۰.۶',
+                        'نسخه تولیدی سامانه: ۱.۰.۷',
                         style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
                       ),
                     ],
