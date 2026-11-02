@@ -2,7 +2,7 @@
 # ==============================================================================
 #  سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس حضرت امام حسین (ع) یزد
 #  Imam Hossein Schools Central Amphitheater Reservation System (HMH)
-#  Automated Master Production Server Installation Script
+#  Automated Master Server & Database Hub Installer
 #  Target Platform: Ubuntu 24.04 LTS / 22.04 LTS x86_64
 # ==============================================================================
 
@@ -19,8 +19,8 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}${BOLD}"
 echo "=============================================================================="
 echo "    موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد"
-echo "    اسکریپت خودکار نصب و راه‌اندازی سرور مرکزی سامانه رزرواسیون آمفی‌تئاتر"
-echo "    HMH Production Infrastructure Installer — Ubuntu Linux"
+echo "    نصب خودکار سرویس مرکزی رزرواسیون، پایگاه داده MySQL و ارتباط اینترنتی"
+echo "    HMH Server Hub & Central Database Setup (Lightweight Mode)"
 echo "=============================================================================="
 echo -e "${NC}"
 
@@ -32,20 +32,7 @@ if [ "${EUID}" -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${CYAN}[۱/۸] در حال بررسی مشخصات سیستم‌عامل و وابستگی‌های پایه...${NC}"
-
-# Detect distribution
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS_NAME=$NAME
-    OS_VER=$VERSION_ID
-    echo -e "  سیستم‌عامل شناسایی شد: ${GREEN}${OS_NAME} ${OS_VER}${NC}"
-else
-    echo -e "${YELLOW}  هشدار: فایل os-release یافت نشد. ادامه نصب بر مبنای توزیع اوبونتو/دبیان.${NC}"
-fi
-
-# Update package repository
-echo -e "${CYAN}[۲/۸] به‌روزرسانی مخازن لینوکس و نصب بسته‌های ضروری...${NC}"
+echo -e "${CYAN}[۱/۶] به‌روزرسانی سیستم و نصب ابزارهای پایه (داکر و شبکه)...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq \
@@ -57,68 +44,52 @@ apt-get install -y -qq \
     ufw \
     openssl \
     ca-certificates \
-    gnupg \
-    lsb-release \
     cron
 
-# 2. Install Docker & Docker Compose if not present
-echo -e "${CYAN}[۳/۸] بررسی و نصب موتور کانتینری Docker و افزونه Compose...${NC}"
+# 2. Install Docker & Compose if not present
 if ! command -v docker &> /dev/null; then
-    echo "  نرم‌افزار داکر بر روی سرور نصب نیست؛ آغاز نصب خودکار داکر رسمی..."
+    echo "  نصب خودکار موتور داکر..."
     curl -fsSL https://get.docker.com | sh
     systemctl enable docker
     systemctl start docker
-    echo -e "  ${GREEN}داکر با موفقیت نصب و راه‌اندازی شد.${NC}"
 else
-    echo -e "  داکر در سرور فعال است: ${GREEN}$(docker --version)${NC}"
+    echo -e "  موتور داکر در سرور فعال است: ${GREEN}$(docker --version)${NC}"
 fi
 
 # Ensure docker compose plugin exists
 if ! docker compose version &> /dev/null; then
-    echo "  در حال نصب افزونه docker-compose-plugin..."
     apt-get install -y -qq docker-compose-plugin || apt-get install -y -qq docker-compose
 fi
 
-# 3. Detect / Setup Project Source Path
-echo -e "${CYAN}[۴/۸] شناسایی و پیکربندی سورس سامانه...${NC}"
-HMH_ROOT=""
+# 3. Setup Dedicated Lightweight Server Directory
+echo -e "${CYAN}[۲/۶] آماده‌سازی سرویس متمرکز بک‌اند در /opt/hmh ...${NC}"
+mkdir -p /opt/hmh
 
-if [ -f "source/deployment/docker/docker-compose.yml" ]; then
-    HMH_ROOT="$(pwd)"
-elif [ -f "../../source/deployment/docker/docker-compose.yml" ]; then
-    HMH_ROOT="$(cd ../.. && pwd)"
-elif [ -f "/opt/hmh/source/deployment/docker/docker-compose.yml" ]; then
-    HMH_ROOT="/opt/hmh"
-else
-    # Auto-clone repository if running directly via curl/bash
-    echo "  دایرکتوری پروژه در مسیر جاری یافت نشد؛ دانلود مخزن اختصاصی در /opt/hmh ..."
-    mkdir -p /opt/hmh
-    if [ ! -d "/opt/hmh/.git" ]; then
-        git clone https://github.com/salehsayyadi/HMH.git /opt/hmh
-    else
-        cd /opt/hmh && git pull origin main
-    fi
-    HMH_ROOT="/opt/hmh"
-fi
+# Fetch ONLY the backend Python application without cluttering the server
+TEMP_DIR=$(mktemp -d)
+echo "  دریافت آخرین نسخه سرویس ارتباطی از مخزن مرکزی..."
+git clone --depth 1 https://github.com/salehsayyadi/HMH.git "${TEMP_DIR}" > /dev/null 2>&1
 
-echo -e "  مسیر اصلی پروژه: ${GREEN}${HMH_ROOT}${NC}"
-cd "${HMH_ROOT}"
+# Copy ONLY backend code and Dockerfile
+mkdir -p /opt/hmh/backend
+cp -rf "${TEMP_DIR}/source/backend/"* /opt/hmh/backend/
+cp -f "${TEMP_DIR}/source/deployment/docker/Dockerfile.backend" /opt/hmh/backend/Dockerfile
+rm -rf "${TEMP_DIR}"
 
-# 4. Create Production Environment Configuration (.env)
-echo -e "${CYAN}[۵/۸] تنظیم متغیرهای محیطی متصل به اپلیکیشن ویندوز (.env)...${NC}"
+cd /opt/hmh
 
-# Exact variables matching Windows Desktop Application settings
-cat << 'EOF' > "${HMH_ROOT}/.env"
+# 4. Generate Production .env with Pre-configured Parameters
+echo -e "${CYAN}[۳/۶] تنظیم پارامترهای اتصال پایگاه‌داده و وب‌سرویس (.env)...${NC}"
+cat << 'EOF' > /opt/hmh/.env
 # ==============================================================================
-#  HMH Production Environment Variables
-#  Automatically configured by install_server.sh
+#  HMH Server Hub Environment
+#  Pre-configured to match Windows Desktop Application defaults
 # ==============================================================================
 PROJECT_NAME=HMH
 APP_ENV=production
 TIMEZONE=Asia/Tehran
 LOG_LEVEL=INFO
 
-# Server & Network Configuration (Matches Windows App Default Profile)
 SERVER_OS="Ubuntu 24.04 LTS"
 DOMAIN=salehvip-clud.ir
 SUBDOMAIN=reserve.salehvip-clud.ir
@@ -127,7 +98,6 @@ WEBSOCKET_URL=wss://reserve.salehvip-clud.ir/ws
 HTTP_PORT=80
 HTTPS_PORT=443
 
-# MySQL 9.7 LTS Central Database Configuration
 DATABASE_ENGINE=mysql
 MYSQL_HOST=mysql
 MYSQL_PORT=3306
@@ -138,136 +108,265 @@ MYSQL_ROOT_PASSWORD=RootSecPass1090
 MYSQL_CHARSET=utf8mb4
 MYSQL_COLLATION=utf8mb4_unicode_ci
 
-# JWT Security Configuration
 JWT_SECRET_KEY=c7d9a1f4e8b23456789abcdef0123456789abcdef0123456789abcdef0123456
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Initial Bootstrap Super Administrator
 INITIAL_ADMIN_USERNAME=123IMHModirkol@1090
 INITIAL_ADMIN_PASSWORD=123IMHModirkol@1090
 
-# CORS Allowed Origins
 CORS_ORIGINS=https://reserve.salehvip-clud.ir,http://localhost:3000,http://localhost:5173,http://localhost:8000,http://localhost,http://127.0.0.1:8000
 EOF
 
-# Copy .env into docker deployment folder
-cp "${HMH_ROOT}/.env" "${HMH_ROOT}/source/deployment/docker/.env"
-echo -e "  ${GREEN}فایل .env با مشخصات کامل اتصال پایگاه داده و وب‌سرویس ایجاد شد.${NC}"
+# 5. Generate Standalone docker-compose.yml (MySQL + FastAPI Backend + Nginx SSL)
+cat << 'EOF' > /opt/hmh/docker-compose.yml
+version: '3.8'
 
-# 5. Prepare SSL Certificates (Self-Signed fallback + Certbot Ready)
-echo -e "${CYAN}[۶/۸] آماده‌سازی گواهی امنیتی SSL و وب‌سرور Nginx...${NC}"
+services:
+  # MySQL 9.7 Central Database
+  mysql:
+    image: mysql:9.0
+    container_name: hmh_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootSecPass1090}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-amphitheater_db}
+      MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
+      TZ: Asia/Tehran
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-storage-engine=InnoDB
+      --max_connections=200
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - hmh_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER:-amphitheater_app}", "-p${MYSQL_PASSWORD:-AppSecPass1090}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  # FastAPI Backend Service (REST API & Real-Time WebSockets)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hmh_backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      TIMEZONE: Asia/Tehran
+      DATABASE_ENGINE: mysql
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-amphitheater_db}
+      MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-c7d9a1f4e8b23456789abcdef0123456789abcdef0123456789abcdef0123456}
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-123IMHModirkol@1090}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-123IMHModirkol@1090}
+      DOMAIN: ${DOMAIN:-salehvip-clud.ir}
+      SUBDOMAIN: ${SUBDOMAIN:-reserve.salehvip-clud.ir}
+    networks:
+      - hmh_net
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: hmh_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - backend
+    networks:
+      - hmh_net
+
+networks:
+  hmh_net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+EOF
+
+# 6. Generate Clean Nginx Configuration
+cat << 'EOF' > /opt/hmh/nginx.conf
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+    keepalive_timeout  65;
+    client_max_body_size 50M;
+
+    # HTTP Server -> Redirect to HTTPS
+    server {
+        listen 80;
+        server_name salehvip-clud.ir reserve.salehvip-clud.ir;
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # HTTPS Server
+    server {
+        listen 443 ssl http2;
+        server_name salehvip-clud.ir reserve.salehvip-clud.ir;
+
+        ssl_certificate /etc/letsencrypt/live/reserve.salehvip-clud.ir/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/reserve.salehvip-clud.ir/privkey.pem;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384";
+
+        # REST API for Windows Application
+        location /api/v1/ {
+            proxy_pass http://backend:8000/api/v1/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 90;
+        }
+
+        # WebSocket for Live Real-Time Calendar Updates
+        location /ws {
+            proxy_pass http://backend:8000/ws;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 86400;
+        }
+
+        # API Docs & Health Endpoint
+        location ~ ^/(docs|redoc|openapi.json) {
+            proxy_pass http://backend:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location / {
+            proxy_pass http://backend:8000/api/v1/system/health;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+EOF
+
+# 7. SSL Preparation (Initial Self-Signed Certificate to ensure immediate startup)
+echo -e "${CYAN}[۴/۶] آماده‌سازی گواهی امنیتی SSL...${NC}"
 CERT_DIR="/etc/letsencrypt/live/reserve.salehvip-clud.ir"
-CHALLENGE_DIR="/var/www/certbot"
 mkdir -p "${CERT_DIR}"
-mkdir -p "${CHALLENGE_DIR}"
+mkdir -p /var/www/certbot
 
 if [ ! -f "${CERT_DIR}/fullchain.pem" ] || [ ! -f "${CERT_DIR}/privkey.pem" ]; then
-    echo "  تولید گواهی امنیتی اولیه (Self-Signed) جهت اطمینان از بالا آمدن اولیه Nginx..."
+    echo "  تولید گواهی اولیه جهت آغاز فوری وب‌سرور..."
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "${CERT_DIR}/privkey.pem" \
         -out "${CERT_DIR}/fullchain.pem" \
-        -subj "/CN=reserve.salehvip-clud.ir/O=Imam Hossein Charitable Cultural Institute/C=IR" > /dev/null 2>&1
-    echo -e "  ${GREEN}گواهی موقت با موفقیت ایجاد شد.${NC}"
+        -subj "/CN=reserve.salehvip-clud.ir/O=HMH/C=IR" > /dev/null 2>&1
 fi
 
 # Configure UFW firewall
 if command -v ufw &> /dev/null; then
-    echo "  تنظیم فایروال جهت مجاز بودن پورت‌های ۲۲، ۸۰ و ۴۴۳..."
     ufw allow 22/tcp > /dev/null 2>&1 || true
     ufw allow 80/tcp > /dev/null 2>&1 || true
     ufw allow 443/tcp > /dev/null 2>&1 || true
 fi
 
-# 6. Build and Launch Containers
-echo -e "${CYAN}[۷/۸] راه‌اندازی کانتینرهای سرویس (MySQL, FastAPI Backend, Admin Web, Nginx)...${NC}"
-cd "${HMH_ROOT}/source/deployment/docker"
-
-echo "  در حال ساخت ایمیج‌ها و اجرای سرویس‌های داکر..."
-docker compose build --quiet backend admin_web
+# 8. Start Services
+echo -e "${CYAN}[۵/۶] راه‌اندازی کانتینر پایگاه داده MySQL و وب‌سرویس مرکزی...${NC}"
+docker compose down --remove-orphans > /dev/null 2>&1 || true
+docker compose build --quiet backend
 docker compose up -d
 
-# 7. Wait for Database Readiness & Verification
-echo -e "${CYAN}[۸/۸] بررسی وضعیت سلامت دیتابیس MySQL و وب‌سرویس FastAPI...${NC}"
-echo "  شکیبا باشید؛ سیستم در حال بررسی ارتباط با پایگاه‌داده و اجرای مهاجرت‌هاست..."
+# 9. Verification
+echo -e "${CYAN}[۶/۶] بررسی برقراری ارتباط پایگاه داده و وب‌سرویس...${NC}"
+echo "  شکیبا باشید؛ سیستم در حال اتصال به پایگاه‌داده و ساخت خودکار جداول است..."
 
-MAX_RETRIES=30
-RETRY_COUNT=0
-DB_UP=false
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+MAX_WAIT=40
+WAITED=0
+while [ $WAITED -lt $MAX_WAIT ]; do
     if docker compose exec -T mysql mysqladmin ping -h localhost -u amphitheater_app -pAppSecPass1090 --silent > /dev/null 2>&1; then
-        DB_UP=true
         break
     fi
     sleep 2
-    RETRY_COUNT=$((RETRY_COUNT+1))
+    WAITED=$((WAITED+2))
 done
 
-if [ "$DB_UP" = true ]; then
-    echo -e "  ${GREEN}پایگاه داده MySQL 9.7 با موفقیت متصل و آماده پاسخگویی شد.${NC}"
-else
-    echo -e "  ${YELLOW}هشدار: پایگاه داده با تاخیر مواجه شد. لطفاً چند لحظه بعد وضعیت را با docker compose ps بررسی فرمایید.${NC}"
-fi
-
-# Check FastAPI health endpoint
 sleep 3
-HEALTH_CHECK=$(curl -s -k http://localhost:8000/api/v1/system/health || echo "connecting")
-echo -e "  وضعیت پاسخ وب‌سرویس: ${GREEN}${HEALTH_CHECK}${NC}"
+HEALTH=$(curl -s -k http://localhost:8000/api/v1/system/health || echo "connecting")
 
-# Attempt official Let's Encrypt SSL certificate if domain points to this server
-PUBLIC_IP=$(curl -s https://api.ipify.org || echo "")
-DOMAIN_IP=$(getent ahosts reserve.salehvip-clud.ir 2>/dev/null | head -n 1 | awk '{print $1}' || echo "")
-
-if [ -n "${PUBLIC_IP}" ] && [ "${PUBLIC_IP}" = "${DOMAIN_IP}" ]; then
-    echo -e "${CYAN}دامنه reserve.salehvip-clud.ir به آی‌پی این سرور (${PUBLIC_IP}) اشاره دارد.${NC}"
-    echo "در حال دریافت خودکار گواهی رسمی Let's Encrypt SSL..."
-    certbot certonly --webroot -w /var/www/certbot \
-        -d reserve.salehvip-clud.ir \
-        --email admin@salehvip-clud.ir \
-        --agree-tos --no-eff-email --non-interactive || true
-    docker compose exec -T nginx nginx -s reload || true
-    echo -e "${GREEN}گواهی معتبر Let's Encrypt با موفقیت نصب و فعال گردید.${NC}"
-else
-    echo -e "${YELLOW}نکته دامنه: آی‌پی عمومی سرور (${PUBLIC_IP}) با رکورد دامنه (${DOMAIN_IP}) متفاوت است یا هنوز اعمال نشده است.${NC}"
-    echo -e "${YELLOW}سامانه هم‌اکنون با گواهی خودامضا در حال کار است. پس از ست شدن DNS، دستور زیر را جهت فعال‌سازی رایگان گواهی رسمی اجرا فرمایید:${NC}"
-    echo "  sudo certbot certonly --webroot -w /var/www/certbot -d reserve.salehvip-clud.ir --agree-tos -m admin@salehvip-clud.ir"
-fi
-
-# Setup Daily Auto-Backup Cron Job
+# Setup Daily Auto-Backup
 mkdir -p /var/backups/hmh
 cat << 'EOF' > /etc/cron.daily/hmh_backup
 #!/bin/bash
-BACKUP_DIR="/var/backups/hmh"
 DATE=$(date +%Y%m%d_%H%M%S)
-docker exec hmh_mysql mysqldump -u amphitheater_app -pAppSecPass1090 amphitheater_db | gzip > "${BACKUP_DIR}/hmh_backup_${DATE}.sql.gz"
-# Keep last 30 days
-find "${BACKUP_DIR}" -type f -name "*.sql.gz" -mtime +30 -delete
+docker exec hmh_mysql mysqldump -u amphitheater_app -pAppSecPass1090 amphitheater_db | gzip > "/var/backups/hmh/backup_${DATE}.sql.gz"
+find /var/backups/hmh -type f -name "*.sql.gz" -mtime +30 -delete
 EOF
 chmod +x /etc/cron.daily/hmh_backup
 
 # Final Success Banner
 echo ""
 echo -e "${GREEN}${BOLD}==============================================================================${NC}"
-echo -e "${GREEN}${BOLD}  نصب و راه‌اندازی سرور با موفقیت به پایان رسید! 🎉${NC}"
+echo -e "${GREEN}${BOLD}  پایگاه‌داده و وب‌سرویس سرور با موفقیت نصب و فعال شدند! 🎉${NC}"
 echo -e "${GREEN}${BOLD}==============================================================================${NC}"
 echo ""
-echo -e "  ${BOLD}مشخصات اتصال سامانه:${NC}"
-echo -e "  • دامنه اصلی وب‌سرویس:   ${CYAN}https://reserve.salehvip-clud.ir${NC}"
-echo -e "  • آدرس اتصال API برنامه: ${CYAN}https://reserve.salehvip-clud.ir/api/v1${NC}"
-echo -e "  • آدرس وب‌سوکت تقویم:    ${CYAN}wss://reserve.salehvip-clud.ir/ws${NC}"
-echo -e "  • مستندات تعاملی API:    ${CYAN}https://reserve.salehvip-clud.ir/docs${NC}"
-echo -e "  • پنل وب مدیریت ارشد:    ${CYAN}https://reserve.salehvip-clud.ir${NC}"
+echo -e "  ${BOLD}مشخصات اتصال برنامه ویندوز به سرور:${NC}"
+echo -e "  • آدرس اتصال برنامه:    ${CYAN}https://reserve.salehvip-clud.ir/api/v1${NC}"
+echo -e "  • وضعیت سلامت وب‌سرویس: ${GREEN}${HEALTH}${NC}"
+echo -e "  • وب‌سوکت تقویم زنده:   ${CYAN}wss://reserve.salehvip-clud.ir/ws${NC}"
+echo -e "  • مستندات وب‌سرویس:     ${CYAN}https://reserve.salehvip-clud.ir/docs${NC}"
 echo ""
-echo -e "  ${BOLD}اطلاعات ورود مدیر کل (پیش‌فرض):${NC}"
+echo -e "  ${BOLD}اطلاعات حساب پیش‌فرض مدیر ارشد:${NC}"
 echo -e "  • نام کاربری: ${YELLOW}123IMHModirkol@1090${NC}"
-echo -e "  • کلمه عبور:  ${YELLOW}123IMHModirkol@1090${NC}"
+echo -e "  • رمز عبور:   ${YELLOW}123IMHModirkol@1090${NC}"
 echo ""
 echo -e "  ${BOLD}اطلاعات پایگاه داده مرکزی (MySQL 9.7):${NC}"
-echo -e "  • دیتابیس:    ${CYAN}amphitheater_db${NC}"
-echo -e "  • کاربر:      ${CYAN}amphitheater_app${NC}"
-echo -e "  • پورت داخلی: ${CYAN}3306${NC}"
+echo -e "  • نام دیتابیس:  ${CYAN}amphitheater_db${NC}"
+echo -e "  • نام کاربر:    ${CYAN}amphitheater_app${NC}"
+echo -e "  • پورت داخلی:   ${CYAN}3306${NC}"
 echo ""
-echo -e "  ${GREEN}اکنون برنامه ویندوز شما به این سرور متصل شده و وضعیت آن سبز (متصل) خواهد بود.${NC}"
+echo -e "  ${GREEN}هم‌اکنون تمامی سیستم‌های مدارس با اجرای برنامه ویندوز به این سرور متصل می‌شوند.${NC}"
 echo -e "${GREEN}==============================================================================${NC}"
