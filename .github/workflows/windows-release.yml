@@ -72,7 +72,7 @@ jobs:
           Compress-Archive -Path "app/Admin-Web/*" -DestinationPath "HMH-Admin-Web.zip" -Force
           Compress-Archive -Path "app/Server-Deployment/*" -DestinationPath "HMH-Server-Deployment.zip" -Force
 
-      - name: Create or Update GitHub Release v1.0.0
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "HMH — Imam Hossein Schools Reservation System ${{ github.ref_name }}"
@@ -85,7 +85,7 @@ jobs:
             HMH-Admin-Web.zip
             HMH-Server-Deployment.zip
           body: |
-            ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد — نسخه ۱.۰.۰
+            ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد — نسخه ${{ github.ref_name }}
 
             ### محتویات بسته انتشار (Phase 1):
             1. **HMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
