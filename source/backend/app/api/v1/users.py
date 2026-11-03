@@ -13,6 +13,7 @@ from app.services.audit_service import log_action
 router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.get("", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse])
 async def list_users(
     school_id: Optional[int] = None,
     position_id: Optional[int] = None,

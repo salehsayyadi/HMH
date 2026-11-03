@@ -210,10 +210,12 @@ class HolidayCreate(BaseModel):
     title: str
     is_official: bool = True
     is_manual: bool = True
+    is_booking_allowed: bool = False
 
 class HolidayUpdate(BaseModel):
     title: Optional[str] = None
     is_official: Optional[bool] = None
+    is_booking_allowed: Optional[bool] = None
 
 class HolidayResponse(BaseModel):
     id: int
@@ -222,6 +224,7 @@ class HolidayResponse(BaseModel):
     title: str
     is_official: bool
     is_manual: bool
+    is_booking_allowed: bool = False
     source: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

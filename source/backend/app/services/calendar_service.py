@@ -127,7 +127,12 @@ async def get_calendar_week(
                 school_name = existing_res.school.name if existing_res.school else None
                 user_full_name = existing_res.user.full_name if existing_res.user else None
             elif is_holiday:
-                cell_status = "holiday"
+                if holiday_obj and not getattr(holiday_obj, 'is_booking_allowed', False):
+                    cell_status = "blocked"
+                    is_blocked = True
+                    block_reason = f"تعطیل رسمی: {holiday_title} (غیرقابل رزرو)"
+                else:
+                    cell_status = "holiday"
 
             day_cells.append(CalendarCell(
                 date=cur_date,

@@ -12,6 +12,7 @@ from app.services.audit_service import log_action
 router = APIRouter(prefix="/time-slots", tags=["Time Slots"])
 
 @router.get("", response_model=List[TimeSlotResponse])
+@router.get("/", response_model=List[TimeSlotResponse])
 async def list_time_slots(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(TimeSlot).order_by(TimeSlot.slot_number.asc()))
     slots = res.scalars().all()
@@ -28,6 +29,7 @@ async def list_time_slots(db: AsyncSession = Depends(get_db)):
     ]
 
 @router.post("", response_model=TimeSlotResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TimeSlotResponse, status_code=status.HTTP_201_CREATED)
 async def create_time_slot(
     data: TimeSlotCreate,
     admin: User = Depends(get_current_admin),

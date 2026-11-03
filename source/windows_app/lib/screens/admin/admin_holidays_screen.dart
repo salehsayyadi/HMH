@@ -39,6 +39,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
           'title': h['title'] ?? 'تعطیل رسمی',
           'jalaliDate': h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-',
           'isOfficial': h['is_official'] ?? true,
+          'isBookingAllowed': h['is_booking_allowed'] ?? false,
           'source': h['description'] ?? (h['is_official'] == true ? 'تقویم رسمی کشور' : 'ثبت مدیریت'),
         };
       }).toList();
@@ -64,7 +65,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
     int selectedYear = now.year;
     int selectedMonth = now.month;
     int selectedDay = now.day;
-    bool isOfficial = true;
+    bool allowBooking = false;
     bool isSaving = false;
 
     showDialog(
@@ -219,12 +220,17 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                       ),
                       const SizedBox(height: 8),
                       SwitchListTile(
-                        value: isOfficial,
-                        title: const Text('تعطیل رسمی و مسدودسازی کامل سالن', style: TextStyle(fontSize: 13)),
-                        subtitle: const Text('در صورت فعال بودن، هیچ رزروی در این روز پذیرفته نمی‌شود', style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText)),
+                        value: allowBooking,
+                        title: const Text('امکان ثبت رزرو در این روز مجاز باشد؟', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          allowBooking
+                              ? 'بله — مناسبت در تقویم نمایش داده می‌شود، اما ثبت رزرو توسط مدارس مجاز است.'
+                              : 'خیر — تمامی سانس‌های این روز مسدود و غیرقابل رزرو خواهند بود.',
+                          style: TextStyle(fontSize: 11.5, color: allowBooking ? AppColors.primaryGreen : AppColors.holidayRedText),
+                        ),
                         activeColor: AppColors.primaryGreen,
                         contentPadding: EdgeInsets.zero,
-                        onChanged: (v) => setDlgState(() => isOfficial = v),
+                        onChanged: (v) => setDlgState(() => allowBooking = v),
                       ),
                     ],
                   ),
@@ -246,7 +252,8 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                         await ApiService.createHoliday({
                           'title': titleCtrl.text.trim(),
                           'holiday_date': gDateStr,
-                          'is_official': isOfficial,
+                          'is_official': true,
+                          'is_booking_allowed': allowBooking,
                           'description': descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                         });
                         await _loadHolidays();
@@ -472,6 +479,22 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                                       child: Text(
                                         h['jalaliDate'] as String,
                                         style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: (h['isBookingAllowed'] == true) ? AppColors.pastelGreen : AppColors.holidayRed,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        (h['isBookingAllowed'] == true) ? 'رزرو مجاز' : 'غیرقابل رزرو',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: (h['isBookingAllowed'] == true) ? AppColors.darkGreen : AppColors.holidayRedText,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 14),

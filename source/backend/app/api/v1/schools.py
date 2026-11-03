@@ -11,6 +11,7 @@ from app.services.audit_service import log_action
 router = APIRouter(prefix="/schools", tags=["Schools"])
 
 @router.get("", response_model=List[SchoolResponse])
+@router.get("/", response_model=List[SchoolResponse])
 async def list_schools(
     include_inactive: bool = False,
     db: AsyncSession = Depends(get_db)
@@ -41,6 +42,7 @@ async def list_schools(
     return result
 
 @router.post("", response_model=SchoolResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=SchoolResponse, status_code=status.HTTP_201_CREATED)
 async def create_school(
     data: SchoolCreate,
     admin: User = Depends(get_current_admin),

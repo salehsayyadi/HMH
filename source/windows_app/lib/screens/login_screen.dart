@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
 import '../models/user.dart';
 import 'main_screen.dart';
-import 'server_settings_modal.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,13 +18,65 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isConnectionError = false;
+
+  String? _savedUsername;
+  String? _savedPassword;
 
   @override
   void initState() {
     super.initState();
     _usernameController.text = '';
     _passwordController.text = '';
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final u = prefs.getString('saved_login_username');
+      final p = prefs.getString('saved_login_password');
+      if (u != null && u.isNotEmpty && p != null && p.isNotEmpty) {
+        setState(() {
+          _savedUsername = u;
+          _savedPassword = p;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _applySavedCredentials() async {
+    if (_savedUsername != null && _savedPassword != null) {
+      setState(() {
+        _usernameController.text = _savedUsername!;
+        _passwordController.text = _savedPassword!;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('اطلاعات حساب «$_savedUsername» در فرم جای‌گذاری شد.'),
+          backgroundColor: AppColors.primaryGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _forgetSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('saved_login_username');
+      await prefs.remove('saved_login_password');
+      setState(() {
+        _savedUsername = null;
+        _savedPassword = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('اطلاعات ذخیره‌شده با موفقیت از سیستم پاک شد.'),
+          backgroundColor: AppColors.secondaryText,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {}
   }
 
   Future<void> _handleLogin() async {
@@ -34,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (username.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = 'لطفاً نام کاربری و رمز عبور را وارد فرمایید.';
-        _isConnectionError = false;
       });
       return;
     }
@@ -42,7 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _isConnectionError = false;
     });
 
     try {
@@ -50,7 +100,53 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = UserModel.fromJson(res['user']);
       if (!mounted) return;
 
-      if (res['is_offline_mode'] == true) {
+      // Browser-style credential saving prompt
+      if (_savedUsername != username || _savedPassword != password) {
+        final shouldSave = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.password_rounded, color: AppColors.primaryGreen, size: 24),
+                  SizedBox(width: 10),
+                  Text('ذخیره اطلاعات ورود', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Text(
+                'آیا مایلید نام کاربری و رمز عبور حساب «$username» در این سیستم ذخیره شود تا در ورود‌های بعدی پیشنهاد داده شود؟',
+                style: const TextStyle(fontSize: 13, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('خیر', style: TextStyle(color: AppColors.secondaryText, fontSize: 13)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('بله، ذخیره شود', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        if (shouldSave == true) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('saved_login_username', username);
+          await prefs.setString('saved_login_password', password);
+        }
+      }
+
+      if (res['is_offline_mode'] == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('ورود در حالت پیکربندی آفلاین مدیر کل انجام شد.'),
@@ -60,16 +156,14 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => MainScreen(currentUser: user)),
       );
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      final isConn = msg.contains('ارتباط') || msg.contains('سرور') || msg.contains('Socket') || msg.contains('network') || msg.contains('Timeout');
-
       setState(() {
         _errorMessage = msg;
-        _isConnectionError = isConn;
       });
     } finally {
       if (mounted) {
@@ -77,16 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  void _openServerSettings() async {
-    final changed = await ServerSettingsModal.show(context);
-    if (changed == true) {
-      setState(() {
-        _errorMessage = null;
-        _isConnectionError = false;
-      });
     }
   }
 
@@ -125,7 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             // Center login card
-
             Center(
               child: SingleChildScrollView(
                 child: Container(
@@ -188,26 +271,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.red.shade200),
                           ),
-                          child: Column(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.error_outline_rounded, color: AppColors.holidayRedText, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.holidayRedText,
-                                        height: 1.5,
-                                      ),
-                                    ),
+                              const Icon(Icons.error_outline_rounded, color: AppColors.holidayRedText, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.holidayRedText,
+                                    height: 1.5,
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
@@ -309,12 +387,57 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         onSubmitted: (_) => _handleLogin(),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 14),
 
-                      // Login button matching reference (Enlarged)
+                      // Browser-style autofill suggestion if saved credentials exist
+                      if (_savedUsername != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.pastelGreen.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.key_rounded, size: 18, color: AppColors.darkGreen),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'پیشنهاد ورود: $_savedUsername',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _applySavedCredentials,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('جای‌گذاری', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.primaryGreen)),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.secondaryText),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: 'فراموشی این حساب',
+                                onPressed: _forgetSavedCredentials,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Login button matching reference
                       SizedBox(
                         width: double.infinity,
-                        height: 54,
+                        height: 52,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
@@ -343,42 +466,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Quick login presets for testing
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          ActionChip(
-                            avatar: const Icon(Icons.person_outline, size: 16, color: AppColors.primaryGreen),
-                            label: const Text('کاربر آزمایشی (test / test)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                            backgroundColor: AppColors.veryLightGreen,
-                            side: const BorderSide(color: AppColors.cardBorder),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            onPressed: () {
-                              setState(() {
-                                _usernameController.text = 'test';
-                                _passwordController.text = 'test';
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16, color: AppColors.darkGreen),
-                            label: const Text('مدیر ارشد سامانه', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                            backgroundColor: AppColors.veryLightGreen,
-                            side: const BorderSide(color: AppColors.cardBorder),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            onPressed: () {
-                              setState(() {
-                                _usernameController.text = '123IMHModirkol@1090';
-                                _passwordController.text = '123IMHModirkol@1090';
-                              });
-                            },
-                          ),
-                        ],
                       ),
                     ],
                   ),

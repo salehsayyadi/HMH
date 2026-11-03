@@ -33,13 +33,13 @@ class CalendarCellModel {
 
   factory CalendarCellModel.fromJson(Map<String, dynamic> json) {
     return CalendarCellModel(
-      date: json['date'],
-      jalaliDate: json['jalali_date'],
-      jalaliDayName: json['jalali_day_name'],
-      dayOfWeek: json['day_of_week'],
-      timeSlotId: json['time_slot_id'],
-      timeSlotTitle: json['time_slot_title'],
-      status: json['status'],
+      date: json['date'] ?? '',
+      jalaliDate: json['jalali_date'] ?? '',
+      jalaliDayName: json['jalali_day_name'] ?? '',
+      dayOfWeek: json['day_of_week'] ?? 0,
+      timeSlotId: json['time_slot_id'] ?? 0,
+      timeSlotTitle: json['time_slot_title'] ?? '',
+      status: json['status'] ?? 'available',
       isHoliday: json['is_holiday'] ?? false,
       holidayTitle: json['holiday_title'],
       isBlocked: json['is_blocked'] ?? false,
@@ -56,9 +56,11 @@ class CalendarDayModel {
   final String jalaliDate;
   final String dayName;
   final String dayNumber;
+  final String? monthNameDisplay;
   final bool isToday;
   final bool isHoliday;
   final String? holidayTitle;
+  final bool isOutOfMonth;
   final List<CalendarCellModel> slots;
 
   CalendarDayModel({
@@ -66,22 +68,26 @@ class CalendarDayModel {
     required this.jalaliDate,
     required this.dayName,
     required this.dayNumber,
+    this.monthNameDisplay,
     required this.isToday,
     required this.isHoliday,
     this.holidayTitle,
+    this.isOutOfMonth = false,
     required this.slots,
   });
 
   factory CalendarDayModel.fromJson(Map<String, dynamic> json) {
     return CalendarDayModel(
-      date: json['date'],
-      jalaliDate: json['jalali_date'],
-      dayName: json['day_name'],
-      dayNumber: json['day_number'],
+      date: json['date'] ?? '',
+      jalaliDate: json['jalali_date'] ?? '',
+      dayName: json['day_name'] ?? '',
+      dayNumber: json['day_number'] ?? '',
+      monthNameDisplay: json['month_name_display'],
       isToday: json['is_today'] ?? false,
       isHoliday: json['is_holiday'] ?? false,
       holidayTitle: json['holiday_title'],
-      slots: (json['slots'] as List).map((s) => CalendarCellModel.fromJson(s)).toList(),
+      isOutOfMonth: json['is_out_of_month'] ?? false,
+      slots: (json['slots'] as List? ?? []).map((s) => CalendarCellModel.fromJson(s)).toList(),
     );
   }
 }
@@ -103,11 +109,11 @@ class TimeSlotModel {
 
   factory TimeSlotModel.fromJson(Map<String, dynamic> json) {
     return TimeSlotModel(
-      id: json['id'],
-      slotNumber: json['slot_number'],
-      title: json['title'],
-      startTime: json['start_time'],
-      endTime: json['end_time'],
+      id: json['id'] ?? 0,
+      slotNumber: json['slot_number'] ?? 0,
+      title: json['title'] ?? '',
+      startTime: json['start_time'] ?? '',
+      endTime: json['end_time'] ?? '',
     );
   }
 }

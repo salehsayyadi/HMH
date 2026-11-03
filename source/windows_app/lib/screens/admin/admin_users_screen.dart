@@ -72,8 +72,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final userCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    int? selectedSchoolId = _schoolsRaw.isNotEmpty ? _schoolsRaw.first['id'] as int? : 1;
-    String selectedPos = 'معاون اجرایی';
+    final schoolsToUse = _schoolsRaw.isNotEmpty
+        ? _schoolsRaw
+        : [
+            {'id': 1, 'name': 'مدرسه پسرانه دوره اول'},
+            {'id': 2, 'name': 'مدرسه پسرانه دوره دوم'},
+            {'id': 3, 'name': 'دبیرستان دخترانه دوره اول'},
+            {'id': 4, 'name': 'دبیرستان دخترانه دوره دوم'},
+            {'id': 5, 'name': 'پیش‌دبستانی و دبستان دخترانه'},
+            {'id': 6, 'name': 'پیش‌دبستانی و دبستان پسرانه'},
+          ];
+    int? selectedSchoolId = schoolsToUse.first['id'] as int?;
     bool isSaving = false;
 
     showDialog(
@@ -159,43 +168,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    if (_schoolsRaw.isNotEmpty)
-                      DropdownButtonFormField<int>(
-                        value: selectedSchoolId,
-                        decoration: InputDecoration(
-                          labelText: 'مدرسه انتسابی',
-                          labelStyle: const TextStyle(fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        ),
-                        items: _schoolsRaw.map((s) => DropdownMenuItem<int>(
-                          value: s['id'] as int,
-                          child: Text(s['name'] as String, style: const TextStyle(fontSize: 13)),
-                        )).toList(),
-                        onChanged: (val) {
-                          if (val != null) setDlgState(() => selectedSchoolId = val);
-                        },
-                      ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      value: selectedPos,
+                    DropdownButtonFormField<int>(
+                      value: selectedSchoolId,
                       decoration: InputDecoration(
-                        labelText: 'سمت سازمانی',
+                        labelText: 'مدرسه انتسابی',
                         labelStyle: const TextStyle(fontSize: 13),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'معاون اجرایی', child: Text('معاون اجرایی', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'معاون آموزشی', child: Text('معاون آموزشی', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'معاون پرورشی', child: Text('معاون پرورشی', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'مدیر', child: Text('مدیر', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'معاون فناوری', child: Text('معاون فناوری', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'مسئول اجرایی', child: Text('مسئول اجرایی', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'سایر موارد', child: Text('سایر موارد', style: TextStyle(fontSize: 13))),
-                      ],
+                      items: schoolsToUse.map((s) => DropdownMenuItem<int>(
+                        value: s['id'] as int,
+                        child: Text(s['name'] as String, style: const TextStyle(fontSize: 13)),
+                      )).toList(),
                       onChanged: (val) {
-                        if (val != null) setDlgState(() => selectedPos = val);
+                        if (val != null) setDlgState(() => selectedSchoolId = val);
                       },
                     ),
                   ],
@@ -492,13 +478,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         : SingleChildScrollView(
                             child: Table(
                               columnWidths: const {
-                                0: FlexColumnWidth(2),
-                                1: FlexColumnWidth(1.6),
-                                2: FlexColumnWidth(2.6),
-                                3: FlexColumnWidth(1.3),
-                                4: FlexColumnWidth(1.3),
-                                5: FlexColumnWidth(1),
-                                6: FlexColumnWidth(1.6),
+                                0: FlexColumnWidth(2.2),
+                                1: FlexColumnWidth(1.8),
+                                2: FlexColumnWidth(2.8),
+                                3: FlexColumnWidth(1.5),
+                                4: FlexColumnWidth(1.1),
+                                5: FlexColumnWidth(1.6),
                               },
                               border: TableBorder(horizontalInside: BorderSide(color: AppColors.cardBorder.withOpacity(0.5))),
                               children: [
@@ -508,7 +493,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                     Padding(padding: EdgeInsets.all(14), child: Text('نام و نام خانوادگی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                                     Padding(padding: EdgeInsets.all(14), child: Text('نام کاربری', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                                     Padding(padding: EdgeInsets.all(14), child: Text('مدرسه انتسابی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                    Padding(padding: EdgeInsets.all(14), child: Text('سمت سازمانی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                                     Padding(padding: EdgeInsets.all(14), child: Text('شماره تماس', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                                     Padding(padding: EdgeInsets.all(14), child: Text('وضعیت', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
                                     Padding(padding: EdgeInsets.all(14), child: Text('عملیات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5), textAlign: TextAlign.center)),
@@ -544,7 +528,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       ),
                                       Padding(padding: const EdgeInsets.all(14), child: Text(user['username'] as String, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'))),
                                       Padding(padding: const EdgeInsets.all(14), child: Text(user['school'] as String, style: const TextStyle(fontSize: 12))),
-                                      Padding(padding: const EdgeInsets.all(14), child: Text(user['position'] as String, style: const TextStyle(fontSize: 12))),
                                       Padding(padding: const EdgeInsets.all(14), child: Text(user['phone'] as String, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'))),
                                       Padding(
                                         padding: const EdgeInsets.all(14),

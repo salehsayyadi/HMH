@@ -21,7 +21,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String? _errorMessage;
   List<CalendarDayModel> _days = [];
   List<TimeSlotModel> _timeSlots = [];
-  
+
   late int _jalaliYear;
   late int _jalaliMonth;
   int _selectedWeekIndex = 0; // 0 to 4 (5 week tabs)
@@ -30,6 +30,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
     'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
   ];
+
+  static const List<int> _availableYears = [1403, 1404, 1405, 1406, 1407];
 
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
   String get _monthName => _currentMonthTitle;
@@ -40,8 +42,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final now = Jalali.now();
     _jalaliYear = now.year;
     _jalaliMonth = now.month;
-    _selectedWeekIndex = ((now.day - 1) ~/ 7).clamp(0, 4);
+    _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
     _loadCalendar();
+  }
+
+  int _computeCurrentWeekIndex(int year, int month) {
+    final now = Jalali.now();
+    if (now.year != year || now.month != month) {
+      return 0; // Default to Week 1 for other months
+    }
+    final firstDay = Jalali(year, month, 1);
+    final week1Sat = firstDay - (firstDay.weekDay - 1);
+    for (int w = 0; w < 5; w++) {
+      final wSat = week1Sat + (w * 7);
+      final wFri = wSat + 6;
+      if (now >= wSat && now <= wFri) {
+        return w;
+      }
+    }
+    return 0;
   }
 
   void _changeMonth(int delta) {
@@ -54,7 +73,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _jalaliMonth = 12;
         _jalaliYear--;
       }
-      _selectedWeekIndex = 0;
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
     });
     _loadCalendar();
   }
@@ -62,7 +81,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _selectMonth(int monthIndex) {
     setState(() {
       _jalaliMonth = monthIndex + 1;
-      _selectedWeekIndex = 0;
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
+    });
+    _loadCalendar();
+  }
+
+  void _selectYear(int year) {
+    setState(() {
+      _jalaliYear = year;
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
     });
     _loadCalendar();
   }
@@ -73,20 +100,123 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _errorMessage = null;
     });
 
-    final dayNum = ((_selectedWeekIndex * 7) + 1).clamp(1, 29);
-    final jTarget = Jalali(_jalaliYear, _jalaliMonth, dayNum);
-    final gTarget = jTarget.toDateTime();
+    // 1. Calculate Saturday of Week 1
+    final firstDayOfMonth = Jalali(_jalaliYear, _jalaliMonth, 1);
+    final prevDaysCount = firstDayOfMonth.weekDay - 1; // Days from prev month in week 1
+    final week1Sat = firstDayOfMonth - prevDaysCount;
+
+    // 2. Calculate Saturday of selected week
+    final currentWeekSat = week1Sat + (_selectedWeekIndex * 7);
+
+    // Pick a sample day in this week to query backend API
+    Jalali sampleDay = currentWeekSat;
+    for (int d = 0; d < 7; d++) {
+      final candidate = currentWeekSat + d;
+      if (candidate.year == _jalaliYear && candidate.month == _jalaliMonth) {
+        sampleDay = candidate;
+        break;
+      }
+    }
+    final gTarget = sampleDay.toDateTime();
     final targetDateStr = '${gTarget.year}-${gTarget.month.toString().padLeft(2, '0')}-${gTarget.day.toString().padLeft(2, '0')}';
+
+    final weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
 
     try {
       final data = await ApiService.getCalendarWeek(targetDate: targetDateStr);
+      final rawSlots = (data['time_slots'] as List? ?? []).map((s) => TimeSlotModel.fromJson(s)).toList();
+      final rawDays = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
+
+      // Build calibrated 7-day model ensuring exact month boundaries
+      final calibratedDays = List.generate(7, (i) {
+        final currentJDay = currentWeekSat + i;
+        final currentGDay = currentJDay.toDateTime();
+        final dateStr = '${currentGDay.year}-${currentGDay.month.toString().padLeft(2, '0')}-${currentGDay.day.toString().padLeft(2, '0')}';
+
+        // Check if day is out of month in week 4 or 5
+        final isAfterMonthEnd = (_selectedWeekIndex >= 3) &&
+            (currentJDay.year > _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month > _jalaliMonth));
+
+        // Check if day belongs to previous month in week 1
+        final isBeforeMonthStart = (_selectedWeekIndex == 0) &&
+            (currentJDay.year < _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month < _jalaliMonth));
+
+        final monthNameDisplay = _persianMonthNames[currentJDay.month - 1];
+
+        if (isAfterMonthEnd) {
+          // Beyond month end: display as blank / out of range
+          return CalendarDayModel(
+            date: dateStr,
+            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
+            dayName: weekDays[i],
+            dayNumber: '—',
+            monthNameDisplay: 'پایان ماه',
+            isToday: false,
+            isHoliday: false,
+            isOutOfMonth: true,
+            slots: [],
+          );
+        }
+
+        // Match with backend data for this date
+        CalendarDayModel? matchedDay;
+        for (final rd in rawDays) {
+          if (rd.date == dateStr) {
+            matchedDay = rd;
+            break;
+          }
+        }
+
+        final isToday = (currentJDay == Jalali.now());
+        final isFri = (i == 6);
+
+        if (matchedDay != null) {
+          return CalendarDayModel(
+            date: dateStr,
+            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
+            dayName: weekDays[i],
+            dayNumber: currentJDay.day.toString(),
+            monthNameDisplay: monthNameDisplay,
+            isToday: isToday,
+            isHoliday: matchedDay.isHoliday || isFri,
+            holidayTitle: matchedDay.holidayTitle ?? (isFri ? 'تعطیل هفتگی جمعه' : null),
+            isOutOfMonth: false,
+            slots: matchedDay.slots,
+          );
+        }
+
+        // Fallback slots if not in backend response
+        return CalendarDayModel(
+          date: dateStr,
+          jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
+          dayName: weekDays[i],
+          dayNumber: currentJDay.day.toString(),
+          monthNameDisplay: monthNameDisplay,
+          isToday: isToday,
+          isHoliday: isFri,
+          holidayTitle: isFri ? 'تعطیل هفتگی جمعه' : null,
+          isOutOfMonth: false,
+          slots: rawSlots.map((ts) => CalendarCellModel(
+            date: dateStr,
+            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
+            jalaliDayName: weekDays[i],
+            dayOfWeek: i,
+            timeSlotId: ts.id,
+            timeSlotTitle: ts.title,
+            status: isFri ? 'holiday' : 'available',
+            isHoliday: isFri,
+            holidayTitle: isFri ? 'تعطیل هفتگی جمعه' : null,
+            isBlocked: false,
+          )).toList(),
+        );
+      });
+
       setState(() {
-        _jalaliYear = data['jalali_year'] ?? _jalaliYear;
-        _timeSlots = (data['time_slots'] as List? ?? []).map((s) => TimeSlotModel.fromJson(s)).toList();
-        _days = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
+        _timeSlots = rawSlots;
+        _days = calibratedDays;
       });
     } catch (_) {
-      // Dynamic fallback calculated from selected Jalali week
+      // Offline fallback
       final fallbackSlots = [
         TimeSlotModel(id: 1, slotNumber: 1, title: '۰۸:۰۰ تا ۱۰:۰۰', startTime: '08:00', endTime: '10:00'),
         TimeSlotModel(id: 2, slotNumber: 2, title: '۱۰:۰۰ تا ۱۲:۰۰', startTime: '10:00', endTime: '12:00'),
@@ -95,28 +225,46 @@ class _CalendarScreenState extends State<CalendarScreen> {
         TimeSlotModel(id: 5, slotNumber: 5, title: '۱۶:۰۰ تا ۱۸:۰۰', startTime: '16:00', endTime: '18:00'),
       ];
 
-      // Find Saturday of this Jalali week
-      // Jalali weekday: Saturday=1, Sunday=2 ... Friday=7
-      final satOffset = jTarget.weekDay - 1;
-      final saturday = jTarget - satOffset;
-
-      final weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
       final fallbackDays = List.generate(7, (i) {
-        final currentJDay = saturday + i;
+        final currentJDay = currentWeekSat + i;
         final currentGDay = currentJDay.toDateTime();
         final dateStr = '${currentGDay.year}-${currentGDay.month.toString().padLeft(2, '0')}-${currentGDay.day.toString().padLeft(2, '0')}';
+
+        final isAfterMonthEnd = (_selectedWeekIndex >= 3) &&
+            (currentJDay.year > _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month > _jalaliMonth));
+
+        final monthNameDisplay = _persianMonthNames[currentJDay.month - 1];
+
+        if (isAfterMonthEnd) {
+          return CalendarDayModel(
+            date: dateStr,
+            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
+            dayName: weekDays[i],
+            dayNumber: '—',
+            monthNameDisplay: 'پایان ماه',
+            isToday: false,
+            isHoliday: false,
+            isOutOfMonth: true,
+            slots: [],
+          );
+        }
+
+        final isToday = (currentJDay == Jalali.now());
         final isFri = (i == 6);
+
         return CalendarDayModel(
           date: dateStr,
-          jalaliDate: '${currentJDay.day} ${_persianMonthNames[currentJDay.month - 1]} ${currentJDay.year}',
+          jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
           dayName: weekDays[i],
           dayNumber: currentJDay.day.toString(),
-          isToday: currentJDay == Jalali.now(),
+          monthNameDisplay: monthNameDisplay,
+          isToday: isToday,
           isHoliday: isFri,
           holidayTitle: isFri ? 'تعطیل هفتگی جمعه' : null,
+          isOutOfMonth: false,
           slots: fallbackSlots.map((ts) => CalendarCellModel(
             date: dateStr,
-            jalaliDate: '${currentJDay.day} ${_persianMonthNames[currentJDay.month - 1]} ${currentJDay.year}',
+            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
             jalaliDayName: weekDays[i],
             dayOfWeek: i,
             timeSlotId: ts.id,
@@ -134,9 +282,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _days = fallbackDays;
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -145,11 +295,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'این سانس مسدود است: ${cell.blockReason ?? "سرویس دوره‌ای سالن"}',
+            'این سانس مسدود است: ${cell.blockReason ?? "تعطیلی یا سرویس سالن"}',
             style: const TextStyle(fontFamily: 'Vazirmatn'),
             textDirection: TextDirection.rtl,
           ),
-          backgroundColor: AppColors.disabledText,
+          backgroundColor: AppColors.holidayRedText,
         ),
       );
     } else if (cell.status == 'reserved') {
@@ -162,7 +312,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
       );
     } else {
-      // Available or holiday (holiday is bookable per Part 13.3)
+      // Available or bookable holiday
       showDialog(
         context: context,
         builder: (_) => BookingModal(
@@ -176,6 +326,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final now = Jalali.now();
+    final todayStr = 'امروز: ${now.formatter.wN}، ${now.day} ${_persianMonthNames[now.month - 1]} ${now.year}';
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryGreen),
@@ -224,7 +377,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             child: Row(
               children: [
-                // Interactive Month selector
+                // Interactive Month and Year selector
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
@@ -242,6 +395,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         onPressed: () => _changeMonth(1),
                       ),
                       const SizedBox(width: 8),
+
+                      // Month Picker Popup
                       PopupMenuButton<int>(
                         tooltip: 'انتخاب ماه',
                         initialValue: _jalaliMonth - 1,
@@ -249,11 +404,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Row(
                           children: [
                             Text(
-                              '$_currentMonthTitle $_jalaliYear',
-                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                              _currentMonthTitle,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryGreen),
+                            const SizedBox(width: 2),
+                            const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
                           ],
                         ),
                         itemBuilder: (ctx) => List.generate(12, (i) => PopupMenuItem(
@@ -268,6 +423,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                         )),
                       ),
+
+                      const SizedBox(width: 6),
+
+                      // Year Picker Popup
+                      PopupMenuButton<int>(
+                        tooltip: 'انتخاب سال',
+                        initialValue: _jalaliYear,
+                        onSelected: _selectYear,
+                        child: Row(
+                          children: [
+                            Text(
+                              '$_jalaliYear',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontFamily: 'monospace'),
+                            ),
+                            const SizedBox(width: 2),
+                            const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
+                          ],
+                        ),
+                        itemBuilder: (ctx) => _availableYears.map((yr) => PopupMenuItem(
+                          value: yr,
+                          child: Text(
+                            '$yr',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: (yr == _jalaliYear) ? FontWeight.bold : FontWeight.normal,
+                              color: (yr == _jalaliYear) ? AppColors.primaryGreen : AppColors.mainText,
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.chevron_left, size: 22, color: AppColors.primaryGreen),
@@ -317,7 +503,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 const Spacer(),
 
-                // Today Pill (Enlarged)
+                // Dynamic Today Pill
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
@@ -325,13 +511,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.today, size: 16, color: AppColors.primaryGreen),
-                      SizedBox(width: 8),
+                      const Icon(Icons.today, size: 16, color: AppColors.primaryGreen),
+                      const SizedBox(width: 8),
                       Text(
-                        'امروز: دوشنبه، ۱۱ آبان ۱۴۰۵',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        todayStr,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
                     ],
                   ),
@@ -364,7 +550,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         children: [
                           // Right Date Column Header
                           const SizedBox(
-                            width: 146,
+                            width: 150,
                             child: Row(
                               children: [
                                 Icon(Icons.calendar_today, size: 16, color: AppColors.primaryGreen),
@@ -404,6 +590,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.cardBorder),
                         itemBuilder: (context, dayIdx) {
                           final day = _days[dayIdx];
+                          final isOutOfMonth = day.isOutOfMonth;
+
                           return SizedBox(
                             height: 76,
                             child: Row(
@@ -412,7 +600,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 Container(
                                   width: 160,
                                   padding: const EdgeInsets.symmetric(horizontal: 18),
-                                  color: day.isToday ? AppColors.pastelGreen.withOpacity(0.4) : Colors.transparent,
+                                  color: day.isToday
+                                      ? AppColors.pastelGreen.withOpacity(0.4)
+                                      : (isOutOfMonth ? Colors.grey.shade50 : Colors.transparent),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,15 +612,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
-                                          color: day.isHoliday ? AppColors.holidayRedText : AppColors.darkGreen,
+                                          color: isOutOfMonth
+                                              ? Colors.grey.shade400
+                                              : (day.isHoliday ? AppColors.holidayRedText : AppColors.darkGreen),
                                         ),
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        '${day.dayNumber} $_monthName',
+                                        isOutOfMonth
+                                            ? 'خارج از محدوده ماه'
+                                            : '${day.dayNumber} ${day.monthNameDisplay ?? _monthName}',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: day.isHoliday ? AppColors.holidayRedText : AppColors.secondaryText,
+                                          color: isOutOfMonth
+                                              ? Colors.grey.shade400
+                                              : (day.isHoliday ? AppColors.holidayRedText : AppColors.secondaryText),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -438,10 +634,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   ),
                                 ),
 
-                                // 5 Cells for this day
-                                ...day.slots.map((cell) => Expanded(
-                                  child: _buildCalendarCell(cell),
-                                )),
+                                // Cells for this day (5 time slot columns)
+                                if (isOutOfMonth)
+                                  ...List.generate(_timeSlots.length, (sIdx) => Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(5.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.grey.shade200),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '—',
+                                          style: TextStyle(color: Colors.grey.shade400, fontSize: 16, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  ))
+                                else
+                                  ...day.slots.map((cell) => Expanded(
+                                    child: _buildCalendarCell(cell),
+                                  )),
                               ],
                             ),
                           );
@@ -481,7 +696,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       bgColor = AppColors.holidayRed;
       textColor = AppColors.holidayRedText;
       line1 = '+ آزاد';
-      line2 = cell.holidayTitle ?? 'تعطیل رسمی';
+      line2 = cell.holidayTitle ?? 'تعطیل رسمی (مجاز)';
       cellIcon = Icons.add_circle_outline;
     } else {
       bgColor = AppColors.pastelGreen;

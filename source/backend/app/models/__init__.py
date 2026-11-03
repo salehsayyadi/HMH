@@ -134,6 +134,7 @@ class Holiday(Base):
     title = Column(String(200), nullable=False)
     is_official = Column(Boolean, default=True, nullable=False)
     is_manual = Column(Boolean, default=False, nullable=False)
+    is_booking_allowed = Column(Boolean, default=False, nullable=False)
     source = Column(String(100), default="iran_calendar_adapter", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
