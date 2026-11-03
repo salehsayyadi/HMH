@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/api_service.dart';
 
@@ -12,6 +13,15 @@ class AdminHolidaysScreen extends StatefulWidget {
 class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _holidays = [];
+
+  static const List<String> _monthNames = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+  ];
+
+  static const List<String> _weekDayNames = [
+    'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'
+  ];
 
   @override
   void initState() {
@@ -27,7 +37,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
         return {
           'id': h['id'] ?? 0,
           'title': h['title'] ?? 'تعطیل رسمی',
-          'jalaliDate': h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-',
+          'jalaliDate': h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-',
           'isOfficial': h['is_official'] ?? true,
           'source': h['description'] ?? (h['is_official'] == true ? 'تقویم رسمی کشور' : 'ثبت مدیریت'),
         };
@@ -49,96 +59,271 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
 
   void _showAddDialog() {
     final titleCtrl = TextEditingController();
-    final dateCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final now = Jalali.now();
+    int selectedYear = now.year;
+    int selectedMonth = now.month;
+    int selectedDay = now.day;
+    bool isOfficial = true;
     bool isSaving = false;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: const Row(
-              children: [
-                Icon(Icons.event_busy_rounded, color: AppColors.primaryGreen, size: 24),
-                SizedBox(width: 10),
-                Text('ثبت مناسبت یا تعطیلی جدید در تقویم', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            content: SizedBox(
-              width: 460,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+        builder: (ctx, setDlgState) {
+          int maxDaysInMonth = 30;
+          if (selectedMonth <= 6) {
+            maxDaysInMonth = 31;
+          } else if (selectedMonth <= 11) {
+            maxDaysInMonth = 30;
+          } else {
+            maxDaysInMonth = 29;
+          }
+          if (selectedDay > maxDaysInMonth) {
+            selectedDay = maxDaysInMonth;
+          }
+
+          final jDate = Jalali(selectedYear, selectedMonth, selectedDay);
+          final weekdayStr = _weekDayNames[(jDate.weekDay - 1).clamp(0, 6)];
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              title: const Row(
                 children: [
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'عنوان مناسبت (مثال: عید مبعث یا تعطیلی مدارس)',
-                      labelStyle: const TextStyle(fontSize: 13),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: dateCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'تاریخ شمسی (مثال: ۱۴۰۵/۰۸/۲۸ یا ۲۸ آبان)',
-                      labelStyle: const TextStyle(fontSize: 13),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
+                  Icon(Icons.event_busy_rounded, color: AppColors.primaryGreen, size: 24),
+                  SizedBox(width: 10),
+                  Text('ثبت مناسبت یا تعطیلی جدید در تقویم', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 ],
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('انصراف', style: TextStyle(fontSize: 13, color: AppColors.secondaryText)),
-              ),
-              ElevatedButton(
-                onPressed: isSaving ? null : () async {
-                  if (titleCtrl.text.isNotEmpty && dateCtrl.text.isNotEmpty) {
-                    setDlgState(() => isSaving = true);
-                    final newH = {
-                      'id': _holidays.length + 1,
-                      'title': titleCtrl.text.trim(),
-                      'jalaliDate': dateCtrl.text.trim(),
-                      'isOfficial': false,
-                      'source': 'ثبت دستی مدیریت',
-                    };
-                    try {
-                      await ApiService.createHoliday({
-                        'title': titleCtrl.text.trim(),
-                        'holiday_date': dateCtrl.text.trim(),
-                        'is_official': false,
-                      });
-                    } catch (_) {}
-                    setState(() {
-                      _holidays.add(newH);
-                    });
-                    if (mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تعطیلی جدید با موفقیت اضافه شد.'), backgroundColor: AppColors.primaryGreen),
-                      );
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              content: SizedBox(
+                width: 480,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'عنوان مناسبت یا تعطیلی',
+                          hintText: 'مثال: عید مبعث، تعطیلی آلودگی هوا، روز معلم...',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'انتخاب تاریخ شمسی:',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          // Year Dropdown
+                          Expanded(
+                            flex: 3,
+                            child: DropdownButtonFormField<int>(
+                              value: selectedYear,
+                              decoration: InputDecoration(
+                                labelText: 'سال',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              ),
+                              items: [now.year - 1, now.year, now.year + 1, now.year + 2]
+                                  .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                                  .toList(),
+                              onChanged: (y) {
+                                if (y != null) setDlgState(() => selectedYear = y);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Month Dropdown
+                          Expanded(
+                            flex: 4,
+                            child: DropdownButtonFormField<int>(
+                              value: selectedMonth,
+                              decoration: InputDecoration(
+                                labelText: 'ماه',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              ),
+                              items: List.generate(12, (idx) {
+                                return DropdownMenuItem(
+                                  value: idx + 1,
+                                  child: Text('${idx + 1} - ${_monthNames[idx]}', style: const TextStyle(fontSize: 12.5)),
+                                );
+                              }),
+                              onChanged: (m) {
+                                if (m != null) setDlgState(() => selectedMonth = m);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Day Dropdown
+                          Expanded(
+                            flex: 3,
+                            child: DropdownButtonFormField<int>(
+                              value: selectedDay,
+                              decoration: InputDecoration(
+                                labelText: 'روز',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              ),
+                              items: List.generate(maxDaysInMonth, (idx) {
+                                return DropdownMenuItem(
+                                  value: idx + 1,
+                                  child: Text('${idx + 1}'),
+                                );
+                              }),
+                              onChanged: (d) {
+                                if (d != null) setDlgState(() => selectedDay = d);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Selected Date Card Preview
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.veryLightGreen,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month_rounded, size: 20, color: AppColors.primaryGreen),
+                            const SizedBox(width: 10),
+                            Text(
+                              'تاریخ انتخابی: $weekdayStr $selectedDay ${_monthNames[selectedMonth - 1]} $selectedYear',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: descCtrl,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          labelText: 'توضیحات تکمیلی (اختیاری)',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        value: isOfficial,
+                        title: const Text('تعطیل رسمی و مسدودسازی کامل سالن', style: TextStyle(fontSize: 13)),
+                        subtitle: const Text('در صورت فعال بودن، هیچ رزروی در این روز پذیرفته نمی‌شود', style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText)),
+                        activeColor: AppColors.primaryGreen,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) => setDlgState(() => isOfficial = v),
+                      ),
+                    ],
+                  ),
                 ),
-                child: isSaving
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('ثبت تعطیلی در تقویم', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
               ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('انصراف', style: TextStyle(fontSize: 13, color: AppColors.secondaryText)),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving ? null : () async {
+                    if (titleCtrl.text.trim().isNotEmpty) {
+                      setDlgState(() => isSaving = true);
+                      final jTarget = Jalali(selectedYear, selectedMonth, selectedDay);
+                      final gTarget = jTarget.toDateTime();
+                      final gDateStr = '${gTarget.year}-${gTarget.month.toString().padLeft(2, '0')}-${gTarget.day.toString().padLeft(2, '0')}';
+                      try {
+                        await ApiService.createHoliday({
+                          'title': titleCtrl.text.trim(),
+                          'holiday_date': gDateStr,
+                          'is_official': isOfficial,
+                          'description': descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                        });
+                        await _loadHolidays();
+                        if (mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تعطیلی جدید با موفقیت اضافه شد.'), backgroundColor: AppColors.primaryGreen),
+                          );
+                        }
+                      } catch (e) {
+                        setDlgState(() => isSaving = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('ثبت تعطیلی در تقویم', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> holiday) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('حذف مناسبت / تعطیلی', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.holidayRedText)),
+          content: Text('آیا از حذف مناسبت «${holiday['title']}» (${holiday['jalaliDate']}) از تقویم اطمینان دارید؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final hId = holiday['id'];
+                try {
+                  if (hId != null && hId != 0) {
+                    await ApiService.deleteHoliday(hId as int);
+                  }
+                  await _loadHolidays();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('مناسبت با موفقیت حذف گردید.'), backgroundColor: AppColors.primaryGreen),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.holidayRedText, foregroundColor: Colors.white),
+              child: const Text('حذف قطعی'),
+            ),
+          ],
         ),
       ),
     );
@@ -181,7 +366,19 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                     foregroundColor: Colors.white,
                     elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _loadHolidays,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('به‌روزرسانی', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryGreen,
+                    side: const BorderSide(color: AppColors.primaryGreen),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ],
@@ -281,11 +478,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                                     IconButton(
                                       tooltip: 'حذف تعطیلی',
                                       icon: const Icon(Icons.delete_outline, size: 22, color: AppColors.holidayRedText),
-                                      onPressed: () {
-                                        setState(() {
-                                          _holidays.removeAt(i);
-                                        });
-                                      },
+                                      onPressed: () => _showDeleteDialog(h),
                                     ),
                                   ],
                                 ),

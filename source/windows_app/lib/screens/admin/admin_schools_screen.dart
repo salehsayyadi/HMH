@@ -51,6 +51,161 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
     }
   }
 
+  void _showDeleteSchoolDialog(Map<String, dynamic> school) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('حذف واحد آموزشی', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.holidayRedText)),
+          content: Text('آیا از حذف واحد آموزشی «${school['name']}» اطمینان دارید؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await ApiService.deleteSchool(school['id'] as int);
+                  await _loadSchools();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('واحد آموزشی با موفقیت حذف شد.'), backgroundColor: AppColors.primaryGreen),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.holidayRedText, foregroundColor: Colors.white),
+              child: const Text('حذف قطعی'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditSchoolDialog(Map<String, dynamic> school) {
+    final nameCtrl = TextEditingController(text: school['name'] as String);
+    final phoneCtrl = TextEditingController(text: school['phone'] as String);
+    final repCtrl = TextEditingController(text: school['representative'] as String);
+    final addrCtrl = TextEditingController(text: school['address'] as String);
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: const Row(
+              children: [
+                Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen, size: 24),
+                SizedBox(width: 10),
+                Text('ویرایش مشخصات واحد آموزشی', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SizedBox(
+              width: 440,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'نام مدرسه یا واحد آموزشی',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: 'شماره تماس',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: repCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'نام مدیر یا نماینده مدرسه',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: addrCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'آدرس واحد آموزشی',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('انصراف', style: TextStyle(fontSize: 13, color: AppColors.secondaryText)),
+              ),
+              ElevatedButton(
+                onPressed: isSaving ? null : () async {
+                  if (nameCtrl.text.trim().isNotEmpty) {
+                    setDlgState(() => isSaving = true);
+                    try {
+                      await ApiService.updateSchool(school['id'] as int, {
+                        'name': nameCtrl.text.trim(),
+                        'description': '${repCtrl.text.trim()} - ${phoneCtrl.text.trim()}',
+                      });
+                      await _loadSchools();
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('مشخصات واحد آموزشی به‌روزرسانی شد.'), backgroundColor: AppColors.primaryGreen),
+                        );
+                      }
+                    } catch (e) {
+                      setDlgState(() => isSaving = false);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                        );
+                      }
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
+                child: const Text('ذخیره تغییرات'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showAddSchoolDialog() {
     final nameCtrl = TextEditingController();
     final repCtrl = TextEditingController();
@@ -318,14 +473,35 @@ class _AdminSchoolsScreenState extends State<AdminSchoolsScreen> {
                                         ],
                                       ),
                                     ),
-                                    Switch(
-                                      value: isActive,
-                                      activeColor: AppColors.primaryGreen,
-                                      onChanged: (val) {
-                                        setState(() {
-                                          sc['isActive'] = val;
-                                        });
-                                      },
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined, size: 19, color: AppColors.primaryGreen),
+                                          tooltip: 'ویرایش مدرسه',
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () => _showEditSchoolDialog(sc),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline_rounded, size: 19, color: AppColors.holidayRedText),
+                                          tooltip: 'حذف مدرسه',
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () => _showDeleteSchoolDialog(sc),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Switch(
+                                          value: isActive,
+                                          activeColor: AppColors.primaryGreen,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              sc['isActive'] = val;
+                                            });
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

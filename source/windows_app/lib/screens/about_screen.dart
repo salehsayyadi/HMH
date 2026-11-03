@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
-import 'server_settings_modal.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -86,7 +85,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'نسخه تولیدی سامانه: ۱.۰.۹',
+                        'نسخه تولیدی سامانه: ۱.۰.۱۰',
                         style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -154,27 +153,6 @@ class _AboutScreenState extends State<AboutScreen> {
                       foregroundColor: AppColors.primaryGreen,
                       side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final changed = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => const ServerSettingsModal(),
-                      );
-                      if (changed == true) {
-                        _checkServer();
-                      }
-                    },
-                    icon: const Icon(Icons.settings_ethernet_rounded, size: 18),
-                    label: const Text('تنظیمات اتصال سرور', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: Colors.white,
-                      elevation: 1,
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),

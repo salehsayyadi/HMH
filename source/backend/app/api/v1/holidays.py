@@ -10,10 +10,12 @@ from app.services.holiday_service import get_all_holidays, add_manual_holiday, d
 router = APIRouter(prefix="/holidays", tags=["Holidays"])
 
 @router.get("", response_model=List[HolidayResponse])
+@router.get("/", response_model=List[HolidayResponse])
 async def list_holidays(db: AsyncSession = Depends(get_db)):
     return await get_all_holidays(db)
 
 @router.post("", response_model=HolidayResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=HolidayResponse, status_code=status.HTTP_201_CREATED)
 async def create_holiday(
     data: HolidayCreate,
     admin: User = Depends(get_current_admin),

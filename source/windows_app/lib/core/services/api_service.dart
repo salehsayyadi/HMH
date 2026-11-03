@@ -673,6 +673,56 @@ class ApiService {
     );
   }
 
+  static Future<void> updateSchool(int id, Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    final res = await http.patch(
+      Uri.parse('$baseUrl/schools/$id'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (res.statusCode != 200) {
+      final resData = jsonDecode(utf8.decode(res.bodyBytes));
+      throw Exception(resData['detail'] ?? 'خطا در ویرایش مدرسه');
+    }
+  }
+
+  static Future<Map<String, dynamic>> createTimeSlot(Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      throw Exception('در حالت آفلاین ثبت سانس مقدور نیست.');
+    }
+    final token = await getToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/time-slots'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode == 201) return resData;
+    throw Exception(resData['detail'] ?? 'خطا در ثبت سانس زمانی');
+  }
+
+  static Future<void> deleteTimeSlot(int id) async {
+    if (isOfflineEmergencyMode) return;
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/time-slots/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
+
+  static Future<List<int>> downloadExcelReport() async {
+    final token = await getToken();
+    final res = await http.get(
+      Uri.parse('$baseUrl/reports/reservations/excel'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 15));
+    if (res.statusCode == 200) {
+      return res.bodyBytes;
+    }
+    throw Exception('خطا در دریافت خروجی اکسل از سرور');
+  }
+
   static Future<Map<String, dynamic>> createHoliday(Map<String, dynamic> data) async {
     if (isOfflineEmergencyMode) {
       throw Exception('در حالت آفلاین تغییر در پایگاه‌داده امکان‌پذیر نیست.');

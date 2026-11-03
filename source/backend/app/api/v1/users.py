@@ -48,6 +48,7 @@ async def list_users(
     return [UserResponse.model_validate(u) for u in result.scalars().all()]
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     data: UserCreate,
     admin: User = Depends(get_current_admin),
@@ -58,17 +59,18 @@ async def create_user(
     if existing.scalars().first():
         raise HTTPException(status_code=400, detail="این نام کاربری قبلاً ثبت شده است.")
 
+    raw_pwd = data.initial_password or data.password or "12345678"
     new_user = User(
         username=data.username,
-        password_hash=get_password_hash(data.initial_password),
+        password_hash=get_password_hash(raw_pwd),
         first_name=data.first_name,
         last_name=data.last_name,
         phone_number=data.phone_number,
         school_id=data.school_id,
         position_id=data.position_id,
-        role=data.role,
+        role=data.role or "user",
         is_active=True,
-        must_change_password=True
+        must_change_password=False
     )
     db.add(new_user)
     await log_action(
@@ -165,3 +167,33 @@ async def update_self_profile(
     await db.commit()
     await db.refresh(current_user)
     return UserResponse.model_validate(current_user)
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    if admin.id == user_id:
+        raise HTTPException(status_code=400, detail="مدیر ارشد نمی‌تواند حساب کاربری خود را حذف نماید.")
+
+    res = await db.execute(select(User).where(User.id == user_id))
+    user = res.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="کاربر یافت نشد.")
+
+    # Remove active sessions and user
+    from app.models import RefreshSession, LoginAttempt, Reservation
+    await db.execute(select(RefreshSession).where(RefreshSession.user_id == user_id))
+    
+    await db.delete(user)
+    await log_action(
+        db,
+        action="USER_DELETE",
+        actor_id=admin.id,
+        actor_name=admin.full_name,
+        target_type="User",
+        target_id=str(user_id)
+    )
+    await db.commit()
+    return {"message": "کاربر با موفقیت حذف گردید.", "id": user_id}

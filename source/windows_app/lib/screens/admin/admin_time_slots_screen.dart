@@ -87,6 +87,166 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
     } catch (_) {}
   }
 
+  void _showAddDialog() {
+    final titleCtrl = TextEditingController();
+    final startCtrl = TextEditingController(text: '08:00');
+    final endCtrl = TextEditingController(text: '10:00');
+    final descCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.more_time_rounded, color: AppColors.primaryGreen, size: 24),
+              SizedBox(width: 10),
+              Text('افزودن سانس زمانی جدید', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'عنوان سانس (مثال: صبح اول)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: startCtrl,
+                        textDirection: TextDirection.ltr,
+                        decoration: InputDecoration(
+                          labelText: 'ساعت شروع (مثال ۰۸:۰۰)',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: endCtrl,
+                        textDirection: TextDirection.ltr,
+                        decoration: InputDecoration(
+                          labelText: 'ساعت پایان (مثال ۱۰:۰۰)',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'توضیحات و کاربرد سانس',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(fontSize: 13, color: AppColors.secondaryText)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleCtrl.text.trim().isNotEmpty) {
+                  Navigator.pop(ctx);
+                  try {
+                    await ApiService.createTimeSlot({
+                      'slot_number': _slots.length + 1,
+                      'title': titleCtrl.text.trim(),
+                      'start_time': startCtrl.text.trim(),
+                      'end_time': endCtrl.text.trim(),
+                      'is_active': true,
+                    });
+                    await _loadSlots();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('سانس زمانی جدید با موفقیت اضافه شد.'), backgroundColor: AppColors.primaryGreen),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                      );
+                    }
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
+              child: const Text('افزودن سانس'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> slot) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('حذف سانس زمانی', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.holidayRedText)),
+          content: Text('آیا از حذف سانس «${slot['title']}» (${slot['startTime']} تا ${slot['endTime']}) اطمینان دارید؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await ApiService.deleteTimeSlot(slot['id'] as int);
+                  await _loadSlots();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('سانس زمانی با موفقیت حذف شد.'), backgroundColor: AppColors.primaryGreen),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.holidayRedText, foregroundColor: Colors.white),
+              child: const Text('حذف قطعی'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditDialog(Map<String, dynamic> slot) {
     final titleCtrl = TextEditingController(text: slot['title'] as String);
     final startCtrl = TextEditingController(text: slot['startTime'] as String);
@@ -219,15 +379,27 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: _loadSlots,
-                  icon: const Icon(Icons.refresh, size: 20),
-                  label: const Text('به‌روزرسانی سانس‌ها', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  onPressed: _showAddDialog,
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text('افزودن سانس زمانی', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
                     elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _loadSlots,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('به‌روزرسانی', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryGreen,
+                    side: const BorderSide(color: AppColors.primaryGreen),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ],
@@ -307,6 +479,11 @@ class _AdminTimeSlotsScreenState extends State<AdminTimeSlotsScreen> {
                         tooltip: 'ویرایش سانس',
                         icon: const Icon(Icons.edit_outlined, color: AppColors.primaryGreen, size: 22),
                         onPressed: () => _showEditDialog(slot),
+                      ),
+                      IconButton(
+                        tooltip: 'حذف سانس',
+                        icon: const Icon(Icons.delete_outline, color: AppColors.holidayRedText, size: 22),
+                        onPressed: () => _showDeleteDialog(slot),
                       ),
                       const SizedBox(width: 10),
                       Switch(

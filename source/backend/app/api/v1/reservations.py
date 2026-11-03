@@ -13,6 +13,7 @@ from app.services.reservation_service import create_reservation, cancel_reservat
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
 @router.get("", response_model=List[ReservationResponse])
+@router.get("/", response_model=List[ReservationResponse])
 async def list_reservations(
     school_id: Optional[int] = None,
     user_id: Optional[int] = None,
@@ -61,6 +62,7 @@ async def list_reservations(
     return [serialize_reservation(r, current_user=current_user) for r in reservations]
 
 @router.get("/my-history", response_model=List[ReservationResponse])
+@router.get("/me", response_model=List[ReservationResponse])
 async def get_my_reservation_history(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -76,6 +78,7 @@ async def get_my_reservation_history(
     return [serialize_reservation(r, current_user=current_user) for r in reservations]
 
 @router.post("", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def make_reservation(
     data: ReservationCreate,
     request: Request,
@@ -120,3 +123,20 @@ async def cancel_existing_reservation(
         reason=data.reason,
         ip_address=ip
     )
+
+@router.delete("/{reservation_id}")
+async def delete_reservation_direct(
+    reservation_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    ip = request.client.host if request.client else None
+    await cancel_reservation(
+        db=db,
+        reservation_id=reservation_id,
+        user=current_user,
+        reason="لغو شده توسط متقاضی",
+        ip_address=ip
+    )
+    return {"message": "رزرو با موفقیت لغو شد", "id": reservation_id}

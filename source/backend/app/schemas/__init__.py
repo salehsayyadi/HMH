@@ -37,9 +37,10 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     username: str
-    initial_password: str = Field(..., min_length=6)
+    initial_password: Optional[str] = None
+    password: Optional[str] = None
     phone_number: Optional[str] = None
-    school_id: int
+    school_id: Optional[int] = None
     position_id: Optional[int] = None
     role: str = "user"
 
@@ -150,6 +151,8 @@ class ReservationResponse(BaseModel):
     id: int
     reservation_date: date
     jalali_date: str
+    reservation_date_jalali: Optional[str] = None
+    day_name: Optional[str] = None
     time_slot_id: int
     time_slot: TimeSlotResponse
     school_id: int

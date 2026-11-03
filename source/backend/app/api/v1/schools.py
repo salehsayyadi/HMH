@@ -130,3 +130,26 @@ async def update_school(
 async def list_positions(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Position).where(Position.is_active == True).order_by(Position.id.asc()))
     return [PositionSimple.model_validate(p) for p in res.scalars().all()]
+
+@router.delete("/{school_id}")
+async def delete_school(
+    school_id: int,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    res = await db.execute(select(School).where(School.id == school_id))
+    school = res.scalars().first()
+    if not school:
+        raise HTTPException(status_code=404, detail="مدرسه مورد نظر یافت نشد.")
+
+    await db.delete(school)
+    await log_action(
+        db,
+        action="SCHOOL_DELETE",
+        actor_id=admin.id,
+        actor_name=admin.full_name,
+        target_type="School",
+        target_id=str(school_id)
+    )
+    await db.commit()
+    return {"message": "مدرسه با موفقیت حذف گردید.", "id": school_id}

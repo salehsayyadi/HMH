@@ -23,9 +23,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Default credentials set to test user for reservation testing
-    _usernameController.text = 'test';
-    _passwordController.text = 'test';
+    _usernameController.text = '';
+    _passwordController.text = '';
   }
 
   Future<void> _handleLogin() async {
@@ -210,25 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ],
                               ),
-                              if (_isConnectionError) ...[
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: TextButton.icon(
-                                    onPressed: _openServerSettings,
-                                    icon: const Icon(Icons.settings_suggest_rounded, size: 16),
-                                    label: const Text(
-                                      'پیکربندی آدرس سرور',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.darkGreen,
-                                      backgroundColor: AppColors.pastelGreen.withOpacity(0.6),
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),

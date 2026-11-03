@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     HTTPS_PORT: int = 443
 
     # Database configuration (MySQL 9.7 LTS default, SQLite fallback for local test without docker)
-    DATABASE_ENGINE: str = "mysql"
+    DATABASE_ENGINE: str = "sqlite"
     MYSQL_HOST: str = "mysql"
     MYSQL_PORT: int = 3306
     MYSQL_DATABASE: str = "amphitheater_db"
@@ -74,7 +74,7 @@ class Settings(BaseSettings):
         # When running locally or during tests if MySQL is not available, allow local sqlite fallback
         if self.DATABASE_ENGINE == "sqlite":
             prefix = "sqlite+aiosqlite:///" if is_async else "sqlite:///"
-            db_path = Path("d:/IMH/source/backend/amphitheater_local.db")
+            db_path = Path("d:/HMH-main/source/backend/amphitheater_local.db")
             return f"{prefix}{db_path.as_posix()}"
         
         driver = "mysql+aiomysql" if is_async else "mysql+pymysql"
@@ -85,7 +85,7 @@ class Settings(BaseSettings):
         )
 
     model_config = SettingsConfigDict(
-        env_file=("d:/IMH/.env", ".env"),
+        env_file=("d:/HMH-main/.env", ".env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

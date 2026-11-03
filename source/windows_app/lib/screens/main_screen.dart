@@ -241,25 +241,23 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                if (isSuperAdmin) {
-                                  setState(() => _currentNavIndex = 8); // Settings index
-                                } else {
-                                  ServerSettingsModal.show(context);
-                                }
-                              },
-                              icon: const Icon(Icons.settings, size: 14),
-                              label: const Text('تنظیمات سرور', style: TextStyle(fontSize: 10.5)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryGreen,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            if (isSuperAdmin) ...[
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() => _currentNavIndex = 7); // Settings index
+                                },
+                                icon: const Icon(Icons.settings, size: 14),
+                                label: const Text('تنظیمات سرور', style: TextStyle(fontSize: 10.5)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primaryGreen,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -276,7 +274,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// 9 Section Super Administrator Menu + Calendar View
+  /// 8 Section Super Administrator Menu + Calendar View
   List<Widget> _buildSuperAdminNavItems() {
     return [
       _buildNavItem(0, 'داشبورد مدیریتی', Icons.dashboard_rounded),
@@ -293,13 +291,11 @@ class _MainScreenState extends State<MainScreen> {
       const SizedBox(height: 4),
       _buildNavItem(6, 'گزارش‌ها و آمار', Icons.bar_chart_rounded),
       const SizedBox(height: 4),
-      _buildNavItem(7, 'تاریخچه فعالیت‌ها', Icons.history_rounded),
-      const SizedBox(height: 4),
-      _buildNavItem(8, 'تنظیمات سامانه', Icons.settings_rounded),
+      _buildNavItem(7, 'تنظیمات سامانه', Icons.settings_rounded),
       const SizedBox(height: 8),
       const Divider(height: 1, color: AppColors.cardBorder),
       const SizedBox(height: 8),
-      _buildNavItem(9, 'تقویم رزرو سالن (نمای مدارس)', Icons.calendar_month_rounded, isSecondary: true),
+      _buildNavItem(8, 'تقویم رزرو سالن (نمای مدارس)', Icons.calendar_month_rounded, isSecondary: true),
     ];
   }
 
@@ -380,10 +376,8 @@ class _MainScreenState extends State<MainScreen> {
         case 6:
           return const AdminReportsScreen();
         case 7:
-          return const AdminActivityScreen();
-        case 8:
           return const ServerDatabaseScreen();
-        case 9:
+        case 8:
           return CalendarScreen(currentUser: widget.currentUser);
         default:
           return const AdminDashboardScreen();

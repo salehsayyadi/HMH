@@ -4,8 +4,12 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+except ImportError:
+    openpyxl = None
+    Font = PatternFill = Alignment = Border = Side = None
 from app.models import Reservation, School, User, TimeSlot, BlockedSlot
 from app.schemas import DashboardStatsResponse
 from app.core.persian_date import format_jalali_date, gregorian_to_jalali, PERSIAN_MONTHS

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/api_service.dart';
@@ -60,6 +61,108 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     }
   }
 
+  Future<void> _exportExcel() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+              SizedBox(width: 12),
+              Text('در حال دریافت و ایجاد فایل اکسل...'),
+            ],
+          ),
+          backgroundColor: AppColors.primaryGreen,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      final bytes = await ApiService.downloadExcelReport();
+      String saveDir = '';
+      final userProfile = Platform.environment['USERPROFILE'];
+      if (userProfile != null && Directory('$userProfile\\Downloads').existsSync()) {
+        saveDir = '$userProfile\\Downloads';
+      } else if (userProfile != null && Directory('$userProfile\\Desktop').existsSync()) {
+        saveDir = '$userProfile\\Desktop';
+      } else {
+        saveDir = Directory.current.path;
+      }
+
+      final now = DateTime.now();
+      final nowStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+      final filePath = '$saveDir\\گزارش_رزروها_$nowStr.xlsx';
+      final file = File(filePath);
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: AppColors.primaryGreen, size: 24),
+                  SizedBox(width: 10),
+                  Text('فایل اکسل با موفقیت ذخیره شد', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('فایل گزارش با موفقیت در پوشه ذخیره شد:', style: TextStyle(fontSize: 13)),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.veryLightGreen,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: SelectableText(
+                      filePath,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppColors.darkGreen),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('بستن', style: TextStyle(color: AppColors.secondaryText)),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Process.run('explorer.exe', ['/select,', filePath]);
+                  },
+                  icon: const Icon(Icons.folder_open, size: 18),
+                  label: const Text('نمایش در پوشه ویندوز'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در ذخیره فایل اکسل: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.holidayRedText,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -89,14 +192,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('گزارش آماری اکسل با موفقیت ایجاد گردید.'),
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                    );
-                  },
+                  onPressed: _exportExcel,
                   icon: const Icon(Icons.file_download_outlined, size: 20),
                   label: const Text('خروجی اکسل (Excel)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(

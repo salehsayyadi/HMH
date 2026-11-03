@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
 import '../models/user.dart';
@@ -20,13 +21,48 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String? _errorMessage;
   List<CalendarDayModel> _days = [];
   List<TimeSlotModel> _timeSlots = [];
-  String _monthName = 'آبان';
-  int _jalaliYear = 1403;
-  int _selectedWeekIndex = 1; // 0 to 4 (5 week tabs per Part 13.2)
+  
+  late int _jalaliYear;
+  late int _jalaliMonth;
+  int _selectedWeekIndex = 0; // 0 to 4 (5 week tabs)
+
+  static const List<String> _persianMonthNames = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+  ];
+
+  String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
 
   @override
   void initState() {
     super.initState();
+    final now = Jalali.now();
+    _jalaliYear = now.year;
+    _jalaliMonth = now.month;
+    _selectedWeekIndex = ((now.day - 1) ~/ 7).clamp(0, 4);
+    _loadCalendar();
+  }
+
+  void _changeMonth(int delta) {
+    setState(() {
+      _jalaliMonth += delta;
+      if (_jalaliMonth > 12) {
+        _jalaliMonth = 1;
+        _jalaliYear++;
+      } else if (_jalaliMonth < 1) {
+        _jalaliMonth = 12;
+        _jalaliYear--;
+      }
+      _selectedWeekIndex = 0;
+    });
+    _loadCalendar();
+  }
+
+  void _selectMonth(int monthIndex) {
+    setState(() {
+      _jalaliMonth = monthIndex + 1;
+      _selectedWeekIndex = 0;
+    });
     _loadCalendar();
   }
 
@@ -36,62 +72,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _errorMessage = null;
     });
 
+    final dayNum = ((_selectedWeekIndex * 7) + 1).clamp(1, 29);
+    final jTarget = Jalali(_jalaliYear, _jalaliMonth, dayNum);
+    final gTarget = jTarget.toDateTime();
+    final targetDateStr = '${gTarget.year}-${gTarget.month.toString().padLeft(2, '0')}-${gTarget.day.toString().padLeft(2, '0')}';
+
     try {
-      final data = await ApiService.getCalendarWeek();
+      final data = await ApiService.getCalendarWeek(targetDate: targetDateStr);
       setState(() {
-        _monthName = data['jalali_month_name'] ?? 'آبان';
-        _jalaliYear = data['jalali_year'] ?? 1405;
+        _jalaliYear = data['jalali_year'] ?? _jalaliYear;
         _timeSlots = (data['time_slots'] as List? ?? []).map((s) => TimeSlotModel.fromJson(s)).toList();
         _days = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
       });
     } catch (_) {
-      // Clean fallback week with all slots available (no dummy reservations)
+      // Dynamic fallback calculated from selected Jalali week
       final fallbackSlots = [
         TimeSlotModel(id: 1, slotNumber: 1, title: '۰۸:۰۰ تا ۱۰:۰۰', startTime: '08:00', endTime: '10:00'),
         TimeSlotModel(id: 2, slotNumber: 2, title: '۱۰:۰۰ تا ۱۲:۰۰', startTime: '10:00', endTime: '12:00'),
-        TimeSlotModel(id: 3, slotNumber: 3, title: '۱۲:۳۰ تا ۱۴:۳۰', startTime: '12:30', endTime: '14:30'),
-        TimeSlotModel(id: 4, slotNumber: 4, title: '۱۵:۰۰ تا ۱۷:۰۰', startTime: '15:00', endTime: '17:00'),
-        TimeSlotModel(id: 5, slotNumber: 5, title: '۱۸:۰۰ تا ۲۰:۰۰', startTime: '18:00', endTime: '20:00'),
+        TimeSlotModel(id: 3, slotNumber: 3, title: '۱۲:۰۰ تا ۱۴:۰۰', startTime: '12:00', endTime: '14:00'),
+        TimeSlotModel(id: 4, slotNumber: 4, title: '۱۴:۰۰ تا ۱۶:۰۰', startTime: '14:00', endTime: '16:00'),
+        TimeSlotModel(id: 5, slotNumber: 5, title: '۱۶:۰۰ تا ۱۸:۰۰', startTime: '16:00', endTime: '18:00'),
       ];
 
-      final dayConfigs = [
-        {'dayName': 'شنبه', 'num': '۹', 'date': '2026-10-31', 'jDate': '۹ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
-        {'dayName': 'یکشنبه', 'num': '۱۰', 'date': '2026-11-01', 'jDate': '۱۰ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
-        {'dayName': 'دوشنبه', 'num': '۱۱', 'date': '2026-11-02', 'jDate': '۱۱ آبان ۱۴۰۵', 'isToday': true, 'isHol': false},
-        {'dayName': 'سه‌شنبه', 'num': '۱۲', 'date': '2026-11-03', 'jDate': '۱۲ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
-        {'dayName': 'چهارشنبه', 'num': '۱۳', 'date': '2026-11-04', 'jDate': '۱۳ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
-        {'dayName': 'پنجشنبه', 'num': '۱۴', 'date': '2026-11-05', 'jDate': '۱۴ آبان ۱۴۰۵', 'isToday': false, 'isHol': false},
-        {'dayName': 'جمعه', 'num': '۱۵', 'date': '2026-11-06', 'jDate': '۱۵ آبان ۱۴۰۵', 'isToday': false, 'isHol': true, 'hTitle': 'تعطیل هفتگی جمعه'},
-      ];
+      // Find Saturday of this Jalali week
+      // Jalali weekday: Saturday=1, Sunday=2 ... Friday=7
+      final satOffset = jTarget.weekDay - 1;
+      final saturday = jTarget - satOffset;
 
-      final fallbackDays = dayConfigs.map((cfg) {
-        final isHol = cfg['isHol'] as bool;
+      final weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+      final fallbackDays = List.generate(7, (i) {
+        final currentJDay = saturday + i;
+        final currentGDay = currentJDay.toDateTime();
+        final dateStr = '${currentGDay.year}-${currentGDay.month.toString().padLeft(2, '0')}-${currentGDay.day.toString().padLeft(2, '0')}';
+        final isFri = (i == 6);
         return CalendarDayModel(
-          date: cfg['date'] as String,
-          jalaliDate: cfg['jDate'] as String,
-          dayName: cfg['dayName'] as String,
-          dayNumber: cfg['num'] as String,
-          isToday: cfg['isToday'] as bool,
-          isHoliday: isHol,
-          holidayTitle: cfg['hTitle'] as String?,
+          date: dateStr,
+          jalaliDate: '${currentJDay.day} ${_persianMonthNames[currentJDay.month - 1]} ${currentJDay.year}',
+          dayName: weekDays[i],
+          dayNumber: currentJDay.day.toString(),
+          isToday: currentJDay == Jalali.now(),
+          isHoliday: isFri,
+          holidayTitle: isFri ? 'تعطیل هفتگی جمعه' : null,
           slots: fallbackSlots.map((ts) => CalendarCellModel(
-            date: cfg['date'] as String,
-            jalaliDate: cfg['jDate'] as String,
-            jalaliDayName: cfg['dayName'] as String,
-            dayOfWeek: dayConfigs.indexOf(cfg),
+            date: dateStr,
+            jalaliDate: '${currentJDay.day} ${_persianMonthNames[currentJDay.month - 1]} ${currentJDay.year}',
+            jalaliDayName: weekDays[i],
+            dayOfWeek: i,
             timeSlotId: ts.id,
             timeSlotTitle: ts.title,
-            status: isHol ? 'holiday' : 'available',
-            isHoliday: isHol,
-            holidayTitle: cfg['hTitle'] as String?,
+            status: isFri ? 'holiday' : 'available',
+            isHoliday: isFri,
+            holidayTitle: isFri ? 'تعطیل هفتگی جمعه' : null,
             isBlocked: false,
           )).toList(),
         );
-      }).toList();
+      });
 
       setState(() {
-        _monthName = 'آبان';
-        _jalaliYear = 1405;
         _timeSlots = fallbackSlots;
         _days = fallbackDays;
       });
@@ -186,9 +223,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             child: Row(
               children: [
-                // Month selector (Enlarged)
+                // Interactive Month selector
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.veryLightGreen,
                     borderRadius: BorderRadius.circular(12),
@@ -196,14 +233,48 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryGreen),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$_monthName $_jalaliYear',
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 22, color: AppColors.primaryGreen),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'ماه بعد',
+                        onPressed: () => _changeMonth(1),
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.chevron_left, size: 20, color: AppColors.primaryGreen),
+                      const SizedBox(width: 8),
+                      PopupMenuButton<int>(
+                        tooltip: 'انتخاب ماه',
+                        initialValue: _jalaliMonth - 1,
+                        onSelected: _selectMonth,
+                        child: Row(
+                          children: [
+                            Text(
+                              '$_currentMonthTitle $_jalaliYear',
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.primaryGreen),
+                          ],
+                        ),
+                        itemBuilder: (ctx) => List.generate(12, (i) => PopupMenuItem(
+                          value: i,
+                          child: Text(
+                            _persianMonthNames[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: (i + 1 == _jalaliMonth) ? FontWeight.bold : FontWeight.normal,
+                              color: (i + 1 == _jalaliMonth) ? AppColors.primaryGreen : AppColors.mainText,
+                            ),
+                          ),
+                        )),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left, size: 22, color: AppColors.primaryGreen),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'ماه قبل',
+                        onPressed: () => _changeMonth(-1),
+                      ),
                     ],
                   ),
                 ),

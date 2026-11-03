@@ -108,3 +108,26 @@ async def update_time_slot(
         end_time=slot.end_time.strftime("%H:%M"),
         is_active=slot.is_active
     )
+
+@router.delete("/{slot_id}")
+async def delete_time_slot(
+    slot_id: int,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    res = await db.execute(select(TimeSlot).where(TimeSlot.id == slot_id))
+    slot = res.scalars().first()
+    if not slot:
+        raise HTTPException(status_code=404, detail="بازه زمانی یافت نشد.")
+
+    await db.delete(slot)
+    await log_action(
+        db,
+        action="TIMESLOT_DELETE",
+        actor_id=admin.id,
+        actor_name=admin.full_name,
+        target_type="TimeSlot",
+        target_id=str(slot_id)
+    )
+    await db.commit()
+    return {"message": "سانس زمانی با موفقیت حذف گردید.", "id": slot_id}

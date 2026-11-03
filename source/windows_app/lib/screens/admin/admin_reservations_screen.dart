@@ -40,13 +40,13 @@ class _AdminReservationsScreenState extends State<AdminReservationsScreen> {
       final mapped = rawReservations.map<Map<String, dynamic>>((r) {
         return {
           'id': r['id'] ?? 0,
-          'date': r['reservation_date_jalali'] ?? r['reservation_date'] ?? '-',
+          'date': r['jalali_date'] ?? r['reservation_date_jalali'] ?? r['reservation_date'] ?? '-',
           'day': r['day_name'] ?? '',
-          'timeSlot': r['time_slot']?['title'] ?? r['time_slot_title'] ?? 'سانس عمومی',
-          'school': r['school']?['name'] ?? r['school_name'] ?? 'مدرسه متقاضی',
-          'user': r['user']?['full_name'] ?? r['user_full_name'] ?? 'نماینده مدرسه',
-          'phone': r['user']?['phone_number'] ?? r['phone'] ?? '-',
-          'title': r['title'] ?? 'برنامه آمفی‌تئاتر',
+          'timeSlot': (r['time_slot'] is Map ? r['time_slot']['title'] : null) ?? r['time_slot_title'] ?? 'سانس عمومی',
+          'school': r['school_name'] ?? (r['school'] is Map ? r['school']['name'] : null) ?? 'مدرسه متقاضی',
+          'user': r['user_full_name'] ?? (r['user'] is Map ? r['user']['full_name'] : null) ?? 'نماینده مدرسه',
+          'phone': r['phone_number'] ?? (r['user'] is Map ? r['user']['phone_number'] : null) ?? '-',
+          'title': r['description'] ?? r['title'] ?? 'برنامه آمفی‌تئاتر',
           'status': r['status'] == 'cancelled' ? 'لغو شده' : 'تأیید شده',
           'cancelReason': r['cancellation_reason'],
         };

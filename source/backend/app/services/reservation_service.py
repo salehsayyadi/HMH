@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.models import Reservation, ActiveReservationSlot, TimeSlot, School, User, BlockedSlot, Holiday
 from app.schemas import ReservationCreate, ReservationResponse, TimeSlotResponse
-from app.core.persian_date import format_jalali_date, to_persian_digits
+from app.core.persian_date import format_jalali_date, to_persian_digits, get_persian_weekday_name
 from app.services.audit_service import log_action
 from app.websocket.manager import manager
 
@@ -33,10 +33,13 @@ def serialize_reservation(res: Reservation, current_user: Optional[User] = None)
 
     pos_title = res.user.position.title if (res.user and res.user.position) else None
 
+    j_date = format_jalali_date(res.reservation_date)
     return ReservationResponse(
         id=res.id,
         reservation_date=res.reservation_date,
-        jalali_date=format_jalali_date(res.reservation_date),
+        jalali_date=j_date,
+        reservation_date_jalali=j_date,
+        day_name=get_persian_weekday_name(res.reservation_date),
         time_slot_id=res.time_slot_id,
         time_slot=time_slot_resp,
         school_id=res.school_id,

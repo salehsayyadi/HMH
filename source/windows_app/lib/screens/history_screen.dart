@@ -123,7 +123,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                         ),
                         title: Text(
-                          '${item['jalali_date']} — ${item['time_slot']?['title'] ?? ""}',
+                          '${item['jalali_date'] ?? item['reservation_date_jalali'] ?? item['reservation_date'] ?? ""} — ${item['time_slot']?['title'] ?? ""}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         subtitle: Text(

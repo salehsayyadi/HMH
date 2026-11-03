@@ -15,6 +15,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   List<String> _schoolNames = ['همه مدارس'];
+  List<Map<String, dynamic>> _schoolsRaw = [];
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         setState(() {
           _users = mappedUsers;
+          _schoolsRaw = rawSchools.map((e) => Map<String, dynamic>.from(e)).toList();
           _schoolNames = schoolsList;
         });
       }
@@ -70,7 +72,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final userCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    String selectedSchool = _schoolNames.length > 1 ? _schoolNames[1] : 'مدیریت مرکزی';
+    int? selectedSchoolId = _schoolsRaw.isNotEmpty ? _schoolsRaw.first['id'] as int? : 1;
     String selectedPos = 'معاون اجرایی';
     bool isSaving = false;
 
@@ -156,6 +158,46 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    if (_schoolsRaw.isNotEmpty)
+                      DropdownButtonFormField<int>(
+                        value: selectedSchoolId,
+                        decoration: InputDecoration(
+                          labelText: 'مدرسه انتسابی',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                        items: _schoolsRaw.map((s) => DropdownMenuItem<int>(
+                          value: s['id'] as int,
+                          child: Text(s['name'] as String, style: const TextStyle(fontSize: 13)),
+                        )).toList(),
+                        onChanged: (val) {
+                          if (val != null) setDlgState(() => selectedSchoolId = val);
+                        },
+                      ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: selectedPos,
+                      decoration: InputDecoration(
+                        labelText: 'سمت سازمانی',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'معاون اجرایی', child: Text('معاون اجرایی', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'معاون آموزشی', child: Text('معاون آموزشی', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'معاون پرورشی', child: Text('معاون پرورشی', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'مدیر', child: Text('مدیر', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'معاون فناوری', child: Text('معاون فناوری', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'مسئول اجرایی', child: Text('مسئول اجرایی', style: TextStyle(fontSize: 13))),
+                        DropdownMenuItem(value: 'سایر موارد', child: Text('سایر موارد', style: TextStyle(fontSize: 13))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDlgState(() => selectedPos = val);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -169,34 +211,31 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 onPressed: isSaving ? null : () async {
                   if (userCtrl.text.isNotEmpty && nameCtrl.text.isNotEmpty) {
                     setDlgState(() => isSaving = true);
-                    final newUser = {
-                      'id': _users.length + 1,
-                      'fullName': '${nameCtrl.text.trim()} ${familyCtrl.text.trim()}',
-                      'username': userCtrl.text.trim(),
-                      'school': selectedSchool,
-                      'position': selectedPos,
-                      'phone': phoneCtrl.text.trim(),
-                      'role': 'user',
-                      'isActive': true,
-                    };
                     try {
                       await ApiService.createUser({
                         'username': userCtrl.text.trim(),
                         'password': passCtrl.text.trim(),
+                        'initial_password': passCtrl.text.trim(),
                         'first_name': nameCtrl.text.trim(),
                         'last_name': familyCtrl.text.trim(),
                         'phone_number': phoneCtrl.text.trim(),
+                        'school_id': selectedSchoolId,
                         'role': 'user',
                       });
-                    } catch (_) {}
-                    setState(() {
-                      _users.add(newUser);
-                    });
-                    if (mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('کاربر جدید با موفقیت ایجاد گردید.'), backgroundColor: AppColors.primaryGreen),
-                      );
+                      await _loadData();
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('کاربر جدید با موفقیت ایجاد گردید.'), backgroundColor: AppColors.primaryGreen),
+                        );
+                      }
+                    } catch (e) {
+                      setDlgState(() => isSaving = false);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                        );
+                      }
                     }
                   }
                 },
@@ -212,6 +251,48 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteUserDialog(Map<String, dynamic> user) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('حذف حساب کاربر', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.holidayRedText)),
+          content: Text('آیا از حذف کاربر «${user['fullName']}» (${user['username']}) اطمینان دارید؟ این عملیات قابل بازگشت نیست.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('انصراف', style: TextStyle(color: AppColors.secondaryText)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await ApiService.deleteUser(user['id'] as int);
+                  await _loadData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('کاربر با موفقیت حذف گردید.'), backgroundColor: AppColors.primaryGreen),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.holidayRedText),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.holidayRedText, foregroundColor: Colors.white),
+              child: const Text('حذف قطعی'),
+            ),
+          ],
         ),
       ),
     );
@@ -499,6 +580,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                                 });
                                               },
                                             ),
+                                            if (!isSuperAdmin)
+                                              IconButton(
+                                                tooltip: 'حذف کاربر',
+                                                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.holidayRedText),
+                                                onPressed: () => _showDeleteUserDialog(user),
+                                              ),
                                           ],
                                         ),
                                       ),
