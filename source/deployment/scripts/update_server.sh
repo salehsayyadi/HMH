@@ -175,7 +175,7 @@ echo -e "${GREEN}${BOLD}"
 echo "=============================================================================="
 echo "  به‌روزرسانی سرور با موفقیت به پایان رسید!"
 echo "  وضعیت سلامت سرور:"
-docker compose exec -T backend curl -s http://localhost:8000/api/v1/system/health || true
+docker exec hmh_backend curl -s http://localhost:8000/api/v1/system/health || true
 echo ""
 echo "=============================================================================="
 echo -e "${NC}"
