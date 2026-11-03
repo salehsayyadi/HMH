@@ -32,6 +32,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   ];
 
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
+  String get _monthName => _currentMonthTitle;
 
   @override
   void initState() {
