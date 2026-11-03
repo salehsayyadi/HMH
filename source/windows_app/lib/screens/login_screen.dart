@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
 import '../models/user.dart';
+import '../main.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,63 +21,89 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  String? _savedUsername;
-  String? _savedPassword;
+  Map<String, String> _savedAccounts = {};
 
   @override
   void initState() {
     super.initState();
     _usernameController.text = '';
     _passwordController.text = '';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      maximizeAppWindow();
+    });
     _loadSavedCredentials();
   }
 
   Future<void> _loadSavedCredentials() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final u = prefs.getString('saved_login_username');
-      final p = prefs.getString('saved_login_password');
-      if (u != null && u.isNotEmpty && p != null && p.isNotEmpty) {
+      final accountsJson = prefs.getString('saved_accounts_map');
+      final Map<String, String> loaded = {};
+      if (accountsJson != null && accountsJson.isNotEmpty) {
+        final decoded = jsonDecode(accountsJson);
+        if (decoded is Map) {
+          decoded.forEach((k, v) {
+            if (k is String && v is String && k.isNotEmpty && v.isNotEmpty) {
+              loaded[k] = v;
+            }
+          });
+        }
+      }
+
+      // Migrate legacy single credential if present
+      final legacyU = prefs.getString('saved_login_username');
+      final legacyP = prefs.getString('saved_login_password');
+      if (legacyU != null && legacyP != null && legacyU.isNotEmpty && legacyP.isNotEmpty) {
+        if (!loaded.containsKey(legacyU)) {
+          loaded[legacyU] = legacyP;
+          await prefs.setString('saved_accounts_map', jsonEncode(loaded));
+        }
+      }
+
+      if (mounted) {
         setState(() {
-          _savedUsername = u;
-          _savedPassword = p;
+          _savedAccounts = loaded;
         });
       }
     } catch (_) {}
   }
 
-  Future<void> _applySavedCredentials() async {
-    if (_savedUsername != null && _savedPassword != null) {
-      setState(() {
-        _usernameController.text = _savedUsername!;
-        _passwordController.text = _savedPassword!;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('اطلاعات حساب «$_savedUsername» در فرم جای‌گذاری شد.'),
-          backgroundColor: AppColors.primaryGreen,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+  void _applyAccount(String username, String password) {
+    setState(() {
+      _usernameController.text = username;
+      _passwordController.text = password;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('اطلاعات حساب «$username» در فرم جای‌گذاری شد.'),
+        backgroundColor: AppColors.primaryGreen,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
-  Future<void> _forgetSavedCredentials() async {
+  Future<void> _forgetAccount(String username) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('saved_login_username');
-      await prefs.remove('saved_login_password');
       setState(() {
-        _savedUsername = null;
-        _savedPassword = null;
+        _savedAccounts.remove(username);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('اطلاعات ذخیره‌شده با موفقیت از سیستم پاک شد.'),
-          backgroundColor: AppColors.secondaryText,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      await prefs.setString('saved_accounts_map', jsonEncode(_savedAccounts));
+
+      if (prefs.getString('saved_login_username') == username) {
+        await prefs.remove('saved_login_username');
+        await prefs.remove('saved_login_password');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('اطلاعات حساب «$username» با موفقیت از سیستم حذف شد.'),
+            backgroundColor: AppColors.secondaryText,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (_) {}
   }
 
@@ -100,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = UserModel.fromJson(res['user']);
       if (!mounted) return;
 
-      // Browser-style credential saving prompt
-      if (_savedUsername != username || _savedPassword != password) {
+      // Browser-style multi-credential saving prompt
+      if (!_savedAccounts.containsKey(username) || _savedAccounts[username] != password) {
         final shouldSave = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -117,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               content: Text(
-                'آیا مایلید نام کاربری و رمز عبور حساب «$username» در این سیستم ذخیره شود تا در ورود‌های بعدی پیشنهاد داده شود؟',
+                'آیا مایلید اطلاعات حساب «$username» در این سیستم ذخیره شود تا در ورودهای بعدی برای انتخاب سریع پیشنهاد داده شود؟',
                 style: const TextStyle(fontSize: 13, height: 1.5),
               ),
               actions: [
@@ -141,8 +169,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (shouldSave == true) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('saved_login_username', username);
-          await prefs.setString('saved_login_password', password);
+          _savedAccounts[username] = password;
+          await prefs.setString('saved_accounts_map', jsonEncode(_savedAccounts));
         }
       }
 
@@ -389,42 +417,84 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Browser-style autofill suggestion if saved credentials exist
-                      if (_savedUsername != null) ...[
+                      // Multi-account saved credentials suggestion manager
+                      if (_savedAccounts.isNotEmpty) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.pastelGreen.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                            color: AppColors.veryLightGreen,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.key_rounded, size: 18, color: AppColors.darkGreen),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'پیشنهاد ورود: $_savedUsername',
-                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.vpn_key_rounded, size: 16, color: AppColors.primaryGreen),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'حساب‌های ذخیره‌شده (${_savedAccounts.length}):',
+                                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: _applySavedCredentials,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              const SizedBox(height: 8),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 140),
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  itemCount: _savedAccounts.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                                  itemBuilder: (ctx, idx) {
+                                    final u = _savedAccounts.keys.elementAt(idx);
+                                    final p = _savedAccounts[u]!;
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: AppColors.cardBorder),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.account_circle_outlined, size: 18, color: AppColors.secondaryText),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              u,
+                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () => _applyAccount(u, p),
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.pastelGreen.withOpacity(0.6),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Text(
+                                                'انتخاب',
+                                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          IconButton(
+                                            icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.secondaryText),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: 'حذف این حساب',
+                                            onPressed: () => _forgetAccount(u),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                                child: const Text('جای‌گذاری', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.primaryGreen)),
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.secondaryText),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: 'فراموشی این حساب',
-                                onPressed: _forgetSavedCredentials,
                               ),
                             ],
                           ),

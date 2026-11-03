@@ -75,13 +75,15 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
     if (mounted) {
       setState(() {
         _isTesting = false;
-        _apiConnected = res['success'] == true;
-        _dbConnected = res['success'] == true; // If API responds, central database connection is operational
+        _apiConnected = res['apiConnected'] == true || (res['success'] == true);
+        _dbConnected = res['dbConnected'] == true;
         if (!silent) {
-          if (res['success'] == true) {
-            _testMessage = 'اتصال با موفقیت برقرار گردید (تاخیر: ${res['latencyMs']}ms — نسخه: ${res['version']})';
+          if (res['success'] == true && _dbConnected) {
+            _testMessage = 'اتصال به وب‌سرویس و پایگاه داده با موفقیت برقرار گردید (تاخیر: ${res['latencyMs']}ms — نسخه: ${res['version']})';
+          } else if (_apiConnected && !_dbConnected) {
+            _testMessage = res['message'] ?? 'وب‌سرویس متصل است اما پایگاه داده مرکزی در دسترس نیست.';
           } else {
-            _testMessage = 'خطا در اتصال: ${res['error']}';
+            _testMessage = res['error'] ?? 'خطا در برقراری ارتباط با سرور مرکزی.';
           }
         }
       });
@@ -170,21 +172,22 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
 
               // Test message banner if any
               if (_testMessage != null) ...[
+                final isFullSuccess = _apiConnected && _dbConnected;
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _apiConnected ? AppColors.veryLightGreen : AppColors.error,
+                    color: isFullSuccess ? AppColors.veryLightGreen : (_apiConnected ? Colors.amber.shade50 : AppColors.error),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _apiConnected ? AppColors.pastelGreen : Colors.red.shade200,
+                      color: isFullSuccess ? AppColors.pastelGreen : (_apiConnected ? Colors.amber.shade300 : Colors.red.shade200),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        _apiConnected ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-                        color: _apiConnected ? AppColors.primaryGreen : AppColors.holidayRedText,
+                        isFullSuccess ? Icons.check_circle_rounded : (_apiConnected ? Icons.warning_amber_rounded : Icons.error_outline_rounded),
+                        color: isFullSuccess ? AppColors.primaryGreen : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
                         size: 22,
                       ),
                       const SizedBox(width: 12),
@@ -194,7 +197,7 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: _apiConnected ? AppColors.darkGreen : AppColors.holidayRedText,
+                            color: isFullSuccess ? AppColors.darkGreen : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
                           ),
                         ),
                       ),
@@ -316,6 +319,31 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
+                  if (ApiService.isOfflineEmergencyMode && _apiConnected && _dbConnected) ...[
+                    const SizedBox(width: 14),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          ApiService.isOfflineEmergencyMode = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('سامانه با موفقیت به حالت آنلاین متصل شد.'),
+                            backgroundColor: AppColors.primaryGreen,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.cloud_done_rounded, size: 21),
+                      label: const Text('فعال‌سازی حالت آنلاین', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

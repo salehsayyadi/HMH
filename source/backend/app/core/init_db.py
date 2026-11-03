@@ -140,4 +140,4 @@ async def init_database_data(db: AsyncSession):
         logger.info("Standard test user (test / test) created successfully.")
 
     # 7. Seed Holidays
-    await seed_default_holidays_if_empty(db, year=1403)
+    await seed_default_holidays_if_empty(db, start_year=1403, end_year=1407)

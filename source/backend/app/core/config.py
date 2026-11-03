@@ -74,7 +74,7 @@ class Settings(BaseSettings):
         # When running locally or during tests if MySQL is not available, allow local sqlite fallback
         if self.DATABASE_ENGINE == "sqlite":
             prefix = "sqlite+aiosqlite:///" if is_async else "sqlite:///"
-            db_path = Path("d:/HMH-main/source/backend/amphitheater_local.db")
+            db_path = Path(__file__).resolve().parent.parent.parent / "amphitheater_local.db"
             return f"{prefix}{db_path.as_posix()}"
         
         driver = "mysql+aiomysql" if is_async else "mysql+pymysql"

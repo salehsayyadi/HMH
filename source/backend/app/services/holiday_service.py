@@ -117,10 +117,18 @@ def get_official_holidays_for_year(year: int) -> List[Tuple[int, int, str]]:
         holidays.extend(YEAR_SPECIFIC_LUNAR_HOLIDAYS[year])
     return holidays
 
-async def seed_default_holidays_if_empty(db: AsyncSession, start_year: int = 1403, end_year: int = 1407):
+async def seed_default_holidays_if_empty(
+    db: AsyncSession,
+    start_year: int = 1403,
+    end_year: int = 1407,
+    year: Optional[int] = None
+):
     """
     Seeds standard national holidays for years 1403 through 1407.
     """
+    if year is not None:
+        start_year = year
+        end_year = year
     # Fetch all existing holiday dates
     existing_res = await db.execute(select(Holiday.holiday_date))
     seen_dates = set(existing_res.scalars().all())

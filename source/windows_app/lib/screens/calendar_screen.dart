@@ -36,6 +36,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
   String get _monthName => _currentMonthTitle;
 
+  int get _totalWeeksInMonth {
+    final firstDay = Jalali(_jalaliYear, _jalaliMonth, 1);
+    final prevDaysCount = firstDay.weekDay - 1; // 0 for Saturday, 6 for Friday
+    final totalDays = prevDaysCount + firstDay.monthLength;
+    return ((totalDays - 1) ~/ 7) + 1;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -48,12 +55,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   int _computeCurrentWeekIndex(int year, int month) {
     final now = Jalali.now();
+    final firstDay = Jalali(year, month, 1);
+    final prevDaysCount = firstDay.weekDay - 1;
+    final totalDays = prevDaysCount + firstDay.monthLength;
+    final totalWeeks = ((totalDays - 1) ~/ 7) + 1;
+
     if (now.year != year || now.month != month) {
       return 0; // Default to Week 1 for other months
     }
-    final firstDay = Jalali(year, month, 1);
-    final week1Sat = firstDay - (firstDay.weekDay - 1);
-    for (int w = 0; w < 5; w++) {
+    final week1Sat = firstDay - prevDaysCount;
+    for (int w = 0; w < totalWeeks; w++) {
       final wSat = week1Sat + (w * 7);
       final wFri = wSat + 6;
       if (now >= wSat && now <= wFri) {
@@ -73,7 +84,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _jalaliMonth = 12;
         _jalaliYear--;
       }
-      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);
     });
     _loadCalendar();
   }
@@ -81,7 +92,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _selectMonth(int monthIndex) {
     setState(() {
       _jalaliMonth = monthIndex + 1;
-      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);
     });
     _loadCalendar();
   }
@@ -89,7 +100,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _selectYear(int year) {
     setState(() {
       _jalaliYear = year;
-      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
+      _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);
     });
     _loadCalendar();
   }
@@ -133,7 +144,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final currentGDay = currentJDay.toDateTime();
         final dateStr = '${currentGDay.year}-${currentGDay.month.toString().padLeft(2, '0')}-${currentGDay.day.toString().padLeft(2, '0')}';
 
-        // Check if day is out of month in week 4 or 5
+        // Check if day is out of month in later weeks
         final isAfterMonthEnd = (_selectedWeekIndex >= 3) &&
             (currentJDay.year > _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month > _jalaliMonth));
 
@@ -143,14 +154,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         final monthNameDisplay = _persianMonthNames[currentJDay.month - 1];
 
-        if (isAfterMonthEnd) {
-          // Beyond month end: display as blank / out of range
+        if (isAfterMonthEnd || isBeforeMonthStart) {
+          // Out of current month: display as blank / out of range
           return CalendarDayModel(
             date: dateStr,
             jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
             dayName: weekDays[i],
             dayNumber: '—',
-            monthNameDisplay: 'پایان ماه',
+            monthNameDisplay: isBeforeMonthStart ? 'ماه قبل' : 'پایان ماه',
             isToday: false,
             isHoliday: false,
             isOutOfMonth: true,
@@ -233,15 +244,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final isAfterMonthEnd = (_selectedWeekIndex >= 3) &&
             (currentJDay.year > _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month > _jalaliMonth));
 
+        final isBeforeMonthStart = (_selectedWeekIndex == 0) &&
+            (currentJDay.year < _jalaliYear || (currentJDay.year == _jalaliYear && currentJDay.month < _jalaliMonth));
+
         final monthNameDisplay = _persianMonthNames[currentJDay.month - 1];
 
-        if (isAfterMonthEnd) {
+        if (isAfterMonthEnd || isBeforeMonthStart) {
           return CalendarDayModel(
             date: dateStr,
             jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
             dayName: weekDays[i],
             dayNumber: '—',
-            monthNameDisplay: 'پایان ماه',
+            monthNameDisplay: isBeforeMonthStart ? 'ماه قبل' : 'پایان ماه',
             isToday: false,
             isHoliday: false,
             isOutOfMonth: true,
@@ -467,10 +481,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 const SizedBox(width: 16),
 
-                // 5 Week Tabs (Enlarged)
-                ...List.generate(5, (index) {
-                  final weekLabels = ['هفته اول', 'هفته دوم', 'هفته سوم', 'هفته چهارم', 'هفته پنجم'];
+                // Dynamic Week Tabs (supports 4, 5, 6 or 7 weeks dynamically depending on month)
+                ...List.generate(_totalWeeksInMonth, (index) {
+                  const weekLabels = [
+                    'هفته اول',
+                    'هفته دوم',
+                    'هفته سوم',
+                    'هفته چهارم',
+                    'هفته پنجم',
+                    'هفته ششم',
+                    'هفته هفتم',
+                  ];
                   final isSelected = _selectedWeekIndex == index;
+                  final label = index < weekLabels.length ? weekLabels[index] : 'هفته ${index + 1}';
                   return Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: InkWell(
@@ -489,7 +512,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           border: isSelected ? null : Border.all(color: AppColors.cardBorder.withOpacity(0.6)),
                         ),
                         child: Text(
-                          weekLabels[index],
+                          label,
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,

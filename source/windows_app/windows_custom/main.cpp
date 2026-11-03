@@ -25,21 +25,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
 
-  // Calculate screen resolution and center the window with balanced square proportions
+  // Screen resolution for full launch dimensions
   int screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
   int screenHeight = ::GetSystemMetrics(SM_CYSCREEN);
 
-  // Comfortable widescreen proportions fitting both sidebar and management content
-  int windowHeight = (screenHeight > 980) ? 900 : static_cast<int>(screenHeight * 0.88);
-  int windowWidth = (screenWidth > 1400) ? 1220 : static_cast<int>(screenWidth * 0.86);
-
-  int x = (screenWidth - windowWidth) / 2;
-  int y = (screenHeight - windowHeight) / 2;
-  if (x < 0) x = 20;
-  if (y < 0) y = 20;
-
-  Win32Window::Point origin(x, y);
-  Win32Window::Size size(windowWidth, windowHeight);
+  Win32Window::Point origin(0, 0);
+  Win32Window::Size size(screenWidth, screenHeight);
 
   // Persian title encoded via explicit 16-bit Unicode escape literals
   // to guarantee exact rendering without any compiler ANSI/Windows-1252 mojibake
@@ -49,8 +40,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     return EXIT_FAILURE;
   }
 
-  ::SetWindowTextW(window.GetHandle(), persianTitle);
-  ::ShowWindow(window.GetHandle(), SW_MAXIMIZE);
+  HWND hwnd = window.GetHandle();
+  ::SetWindowTextW(hwnd, persianTitle);
+  ::ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+  ::UpdateWindow(hwnd);
+  ::PostMessage(hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
 
   window.SetQuitOnClose(true);
 

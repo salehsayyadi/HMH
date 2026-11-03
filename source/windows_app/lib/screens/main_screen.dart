@@ -242,7 +242,47 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                             ),
                             if (isSuperAdmin) ...[
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('در حال بررسی اتصال به سرور و پایگاه‌داده...'), duration: Duration(seconds: 1)),
+                                  );
+                                  final res = await ApiService.testServerConnection();
+                                  if (res['success'] == true && res['dbConnected'] == true) {
+                                    setState(() {
+                                      ApiService.isOfflineEmergencyMode = false;
+                                    });
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('اتصال آنلاین با موفقیت برقرار شد.'),
+                                          backgroundColor: AppColors.primaryGreen,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(res['message'] ?? res['error'] ?? 'سرور یا پایگاه داده هنوز در دسترس نیست.'),
+                                          backgroundColor: Colors.red.shade700,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.refresh_rounded, size: 14),
+                                label: const Text('اتصال مجدد آنلاین', style: TextStyle(fontSize: 10.5)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.darkGreen,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               ElevatedButton.icon(
                                 onPressed: () {
                                   setState(() => _currentNavIndex = 7); // Settings index

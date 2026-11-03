@@ -10,8 +10,21 @@ router = APIRouter(prefix="/system", tags=["System & Server"])
 
 @router.get("/health")
 async def health_check():
+    db_connected = False
+    db_error = None
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            db_connected = True
+    except Exception as e:
+        db_error = str(e)
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_connected else "degraded",
+        "database": "connected" if db_connected else "disconnected",
+        "database_error": db_error,
         "service": "HMH Amphitheater Reservation System",
         "version": "1.0.0-prod",
         "environment": "production"

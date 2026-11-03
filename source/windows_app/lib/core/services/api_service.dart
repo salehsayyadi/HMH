@@ -86,11 +86,18 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final hasDbField = data.containsKey('database');
+        final dbConnected = hasDbField ? (data['database'] == 'connected') : true;
+        final isOverallSuccess = !hasDbField || dbConnected;
         return {
-          'success': true,
+          'success': isOverallSuccess,
+          'apiConnected': true,
+          'dbConnected': dbConnected,
           'latencyMs': stopwatch.elapsedMilliseconds,
           'version': data['version'] ?? '1.0.0',
-          'message': 'اتصال به سرور مرکزی با موفقیت برقرار شد.',
+          'message': isOverallSuccess
+              ? 'اتصال به وب‌سرویس و پایگاه داده مرکزی با موفقیت برقرار شد.'
+              : 'وب‌سرویس فعال است اما پایگاه داده مرکزی متصل نیست (${data['database_error'] ?? 'خطا در پایگاه داده'}).',
         };
       } else {
         return {
@@ -265,8 +272,7 @@ class ApiService {
 
     throw Exception(
       'ارتباط با وب‌سرویس سرور برقرار نشد (پاسخ نامعتبر یا خطای سرور دریافت گردید).\n'
-      'لطفاً از اتصال اینترنت یا فعال بودن وب‌سرویس در بخش «تنظیمات سرور» اطمینان حاصل فرمایید.\n'
-      'همچنین می‌توانید با کاربر آزمایشی (نام کاربری: test / رمز عبور: test) وارد شوید.',
+      'لطفاً از اتصال اینترنت و در دسترس بودن سرور در بخش «تنظیمات سامانه» اطمینان حاصل فرمایید.',
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,6 +7,24 @@ import 'core/services/api_service.dart';
 import 'models/user.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+
+void maximizeAppWindow() {
+  if (!Platform.isWindows) return;
+  try {
+    final user32 = DynamicLibrary.open('user32.dll');
+    final getForegroundWindow = user32.lookupFunction<
+        IntPtr Function(),
+        int Function()>('GetForegroundWindow');
+    final showWindow = user32.lookupFunction<
+        Int32 Function(IntPtr, Int32),
+        int Function(int, int)>('ShowWindow');
+
+    final hwnd = getForegroundWindow();
+    if (hwnd != 0) {
+      showWindow(hwnd, 3); // SW_MAXIMIZE = 3
+    }
+  } catch (_) {}
+}
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -18,6 +37,7 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
+  maximizeAppWindow();
   await ApiService.init();
   runApp(const HMHApp());
 }
@@ -67,6 +87,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      maximizeAppWindow();
+    });
     _checkAuth();
   }
 

@@ -361,8 +361,8 @@ class _ServerSettingsModalState extends State<ServerSettingsModal> {
                               const SizedBox(height: 2),
                               Text(
                                 _testResult!['success'] == true
-                                    ? 'زمان تاخیر پاسخگویی (Latency): ${_testResult!['latencyMs']} میلی‌ثانیه — نسخه سامانه: ${_testResult!['version']}'
-                                    : '${_testResult!['error']}',
+                                    ? '${_testResult!['message'] ?? 'اتصال برقرار شد'} (تأخیر: ${_testResult!['latencyMs']}ms — نسخه: ${_testResult!['version']})'
+                                    : '${_testResult!['error'] ?? _testResult!['message'] ?? "خطا در برقراری ارتباط"}',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: _testResult!['success'] == true ? AppColors.mainText : AppColors.holidayRedText,

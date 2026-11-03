@@ -53,7 +53,30 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Error seeding initial database data: {e}")
     else:
-        logger.error("Could not connect to database after 60 attempts. Serving in degraded mode.")
+        logger.warning("Could not connect to MySQL. Initializing resilient SQLite local database fallback...")
+        try:
+            import app.core.database as db_mod
+            from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+            from pathlib import Path
+            fallback_db = Path(__file__).resolve().parent.parent.parent / "amphitheater_local.db"
+            fallback_url = f"sqlite+aiosqlite:///{fallback_db.as_posix()}"
+            fallback_engine = create_async_engine(fallback_url, echo=False, future=True)
+            async with fallback_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            db_mod.engine = fallback_engine
+            db_mod.AsyncSessionLocal = async_sessionmaker(
+                bind=fallback_engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+                autoflush=False,
+                autocommit=False
+            )
+            async with db_mod.AsyncSessionLocal() as session:
+                logger.info("Seeding initial database data into SQLite fallback...")
+                await init_database_data(session)
+                logger.info("Initial data seeded successfully in SQLite fallback.")
+        except Exception as fb_err:
+            logger.error(f"Error initializing SQLite fallback: {fb_err}")
 
     yield
     logger.info("Shutting down application...")
@@ -82,6 +105,14 @@ async def validation_exception_handler(request, exc):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": "اطلاعات ورودی نامعتبر است.", "errors": exc.errors()}
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Unhandled error on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "خطای داخلی در پردازش درخواست سرور", "error": str(exc)}
     )
 
 # Include v1 API Routers
