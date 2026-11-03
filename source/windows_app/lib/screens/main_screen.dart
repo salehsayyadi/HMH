@@ -29,12 +29,39 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentNavIndex = 0;
+  late UserModel _currentUser;
 
   @override
   void initState() {
     super.initState();
-    // Default to Dashboard (0) for super admin, or Calendar (0) for school user
+    _currentUser = widget.currentUser;
     _currentNavIndex = 0;
+
+    // اگر برنامه در حالت آفلاین بالا آمده، در صورت سلامت بودن سرور و دیتابیس به صورت خودکار آنلاین می‌شود
+    if (ApiService.isOfflineEmergencyMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAutoOnlineConnection();
+      });
+    }
+  }
+
+  Future<void> _checkAutoOnlineConnection() async {
+    final res = await ApiService.reconnectOnline();
+    if (res['success'] == true && mounted) {
+      setState(() {
+        ApiService.isOfflineEmergencyMode = false;
+        if (res['user'] != null) {
+          _currentUser = UserModel.fromJson(res['user']);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ارتباط پایدار با سرور و پایگاه‌داده برقرار گردید (ورود به صورت خودکار آنلاین شد).'),
+          backgroundColor: AppColors.primaryGreen,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -77,7 +104,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ApiService.isOfflineEmergencyMode;
-    final isSuperAdmin = widget.currentUser.role == 'super_admin';
+    final isSuperAdmin = _currentUser.role == 'super_admin';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -135,7 +162,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          widget.currentUser.fullName,
+                          _currentUser.fullName,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -145,7 +172,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.currentUser.positionTitle ?? (isSuperAdmin ? 'مدیر ارشد سیستم' : 'معاون اجرایی'),
+                          _currentUser.positionTitle ?? (isSuperAdmin ? 'مدیر ارشد سیستم' : 'معاون اجرایی'),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -154,7 +181,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          widget.currentUser.schoolName ?? (isSuperAdmin ? 'مدیریت مرکزی موسسه' : 'مدرسه امام حسین (ع)'),
+                          _currentUser.schoolName ?? (isSuperAdmin ? 'مدیریت مرکزی موسسه' : 'مدرسه امام حسین (ع)'),
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.secondaryText,
@@ -246,17 +273,20 @@ class _MainScreenState extends State<MainScreen> {
                               ElevatedButton.icon(
                                 onPressed: () async {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('در حال بررسی اتصال به سرور و پایگاه‌داده...'), duration: Duration(seconds: 1)),
+                                    const SnackBar(content: Text('در حال بررسی اتصال به سرور و احراز هویت با پایگاه‌داده...'), duration: Duration(seconds: 1)),
                                   );
-                                  final res = await ApiService.testServerConnection();
-                                  if (res['success'] == true && res['dbConnected'] == true) {
+                                  final res = await ApiService.reconnectOnline();
+                                  if (res['success'] == true) {
                                     setState(() {
                                       ApiService.isOfflineEmergencyMode = false;
+                                      if (res['user'] != null) {
+                                        _currentUser = UserModel.fromJson(res['user']);
+                                      }
                                     });
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('اتصال آنلاین با موفقیت برقرار شد.'),
+                                        SnackBar(
+                                          content: Text(res['message'] ?? 'اتصال آنلاین با موفقیت برقرار شد.'),
                                           backgroundColor: AppColors.primaryGreen,
                                         ),
                                       );
@@ -265,7 +295,7 @@ class _MainScreenState extends State<MainScreen> {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text(res['message'] ?? res['error'] ?? 'سرور یا پایگاه داده هنوز در دسترس نیست.'),
+                                          content: Text(res['error'] ?? 'سرور یا پایگاه داده هنوز در دسترس نیست.'),
                                           backgroundColor: Colors.red.shade700,
                                         ),
                                       );
@@ -418,22 +448,22 @@ class _MainScreenState extends State<MainScreen> {
         case 7:
           return const ServerDatabaseScreen();
         case 8:
-          return CalendarScreen(currentUser: widget.currentUser);
+          return CalendarScreen(currentUser: _currentUser);
         default:
           return const AdminDashboardScreen();
       }
     } else {
       switch (_currentNavIndex) {
         case 0:
-          return CalendarScreen(currentUser: widget.currentUser);
+          return CalendarScreen(currentUser: _currentUser);
         case 1:
           return const HistoryScreen();
         case 2:
-          return ProfileScreen(currentUser: widget.currentUser);
+          return ProfileScreen(currentUser: _currentUser);
         case 3:
           return const AboutScreen();
         default:
-          return CalendarScreen(currentUser: widget.currentUser);
+          return CalendarScreen(currentUser: _currentUser);
       }
     }
   }

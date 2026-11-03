@@ -13,6 +13,7 @@ from app.services.restriction_service import create_restriction, remove_restrict
 router = APIRouter(prefix="/restrictions", tags=["Restrictions"])
 
 @router.get("", response_model=List[RestrictionResponse])
+@router.get("/", response_model=List[RestrictionResponse])
 async def list_restrictions(
     admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
@@ -43,6 +44,7 @@ async def list_restrictions(
     ]
 
 @router.post("", response_model=RestrictionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=RestrictionResponse, status_code=status.HTTP_201_CREATED)
 async def add_restriction(
     data: RestrictionCreate,
     request: Request,

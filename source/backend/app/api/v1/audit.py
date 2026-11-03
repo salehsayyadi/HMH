@@ -11,6 +11,7 @@ from app.core.persian_date import format_jalali_date
 router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
 
 @router.get("", response_model=List[AuditLogResponse])
+@router.get("/", response_model=List[AuditLogResponse])
 async def list_audit_logs(
     action: Optional[str] = None,
     limit: int = 100,
