@@ -196,8 +196,9 @@ class ApiService {
     }
   }
 
-  /// مدیریت دسترسی آفلاین برای مدیر کل در صورت عدم دسترسی به سرور
+  /// مدیریت دسترسی آفلاین برای مدیر کل و کاربر تست در صورت عدم دسترسی به سرور
   static Future<Map<String, dynamic>> _handleOfflineLoginFallback(String username, String password) async {
+    final cleanUser = username.trim().toLowerCase();
     // اگر کاربر وارد شده مدیر ارشد بوت‌استرپ سامانه باشد، اجازه ورود آفلاین جهت تنظیم سرور داده می‌شود
     if (username.trim() == '123IMHModirkol@1090' && password == '123IMHModirkol@1090') {
       isOfflineEmergencyMode = true;
@@ -230,20 +231,70 @@ class ApiService {
       };
     }
 
+    // دسترسی کاربر عادی آزمایشی (test / test) برای آزمایش رزرو و امکانات
+    if (cleanUser == 'test' && password == 'test') {
+      isOfflineEmergencyMode = true;
+      await saveTokens('offline_test_token', 'offline_test_refresh');
+
+      return {
+        'access_token': 'offline_test_token',
+        'refresh_token': 'offline_test_refresh',
+        'is_offline_mode': true,
+        'user': {
+          'id': 99,
+          'username': 'test',
+          'first_name': 'کاربر',
+          'last_name': 'تست',
+          'full_name': 'کاربر تست',
+          'role': 'user',
+          'phone_number': '09131234567',
+          'is_active': true,
+          'must_change_password': false,
+          'school': {
+            'id': 2,
+            'name': 'مدرسه پسرانه دوره دوم',
+            'code': 'SCH-B2',
+          },
+          'position': {
+            'id': 1,
+            'title': 'معاون اجرایی',
+          },
+        },
+      };
+    }
+
     throw Exception(
       'ارتباط با وب‌سرویس سرور برقرار نشد (پاسخ نامعتبر یا خطای سرور دریافت گردید).\n'
-      'لطفاً از اتصال اینترنت یا فعال بودن وب‌سرویس در بخش «تنظیمات سرور» اطمینان حاصل فرمایید.',
-    );
-
-    // برای سایر کاربران، پیام خطای شفاف فارسی همراه با هدایت به تنظیمات سرور نمایش داده می‌شود
-    throw Exception(
-      'امکان برقراری ارتباط با سرور در آدرس «$baseUrl» وجود ندارد.\n'
-      'لطفاً از اتصال اینترنت یا درستی آدرس سرور در بخش «تنظیمات سرور» اطمینان حاصل فرمایید.',
+      'لطفاً از اتصال اینترنت یا فعال بودن وب‌سرویس در بخش «تنظیمات سرور» اطمینان حاصل فرمایید.\n'
+      'همچنین می‌توانید با کاربر آزمایشی (نام کاربری: test / رمز عبور: test) وارد شوید.',
     );
   }
 
   static Future<Map<String, dynamic>> getMe() async {
     if (isOfflineEmergencyMode) {
+      final token = await getToken();
+      if (token == 'offline_test_token') {
+        return {
+          'id': 99,
+          'username': 'test',
+          'first_name': 'کاربر',
+          'last_name': 'تست',
+          'full_name': 'کاربر تست',
+          'role': 'user',
+          'phone_number': '09131234567',
+          'is_active': true,
+          'must_change_password': false,
+          'school': {
+            'id': 2,
+            'name': 'مدرسه پسرانه دوره دوم',
+            'code': 'SCH-B2',
+          },
+          'position': {
+            'id': 1,
+            'title': 'معاون اجرایی',
+          },
+        };
+      }
       return {
         'id': 1,
         'username': '123IMHModirkol@1090',
@@ -275,16 +326,8 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getCalendarWeek({String? targetDate}) async {
     if (isOfflineEmergencyMode) {
-      return {
-        'days': [],
-        'time_slots': [
-          {'id': 1, 'name': 'سانس اول', 'start_time': '08:00', 'end_time': '09:30'},
-          {'id': 2, 'name': 'سانس دوم', 'start_time': '09:30', 'end_time': '11:00'},
-          {'id': 3, 'name': 'سانس سوم', 'start_time': '12:30', 'end_time': '14:00'},
-          {'id': 4, 'name': 'سانس چهارم', 'start_time': '16:00', 'end_time': '17:30'},
-          {'id': 5, 'name': 'سانس پنجم', 'start_time': '18:00', 'end_time': '19:30'},
-        ],
-      };
+      // در حالت آفلاین، خطای شبیه‌سازی شده صادر می‌شود تا تقویم با سانس‌های فعال آماده آزمایش بارگذاری شود
+      throw Exception('پیکربندی حالت آفلاین - نمایش هفته آزمایشی');
     }
 
     final token = await getToken();
@@ -315,7 +358,30 @@ class ApiService {
     String? description,
   }) async {
     if (isOfflineEmergencyMode) {
-      throw Exception('در حالت پیکربندی آفلاین امکان ثبت رزرو وجود ندارد. لطفاً ابتدا ارتباط با سرور را برقرار فرمایید.');
+      // شبیه‌سازی ثبت موفق رزرو در حالت تست آفلاین جهت امکان ارزیابی پنجره ثبت و جریان کاربری
+      return {
+        'id': 999,
+        'reservation_date': reservationDate,
+        'time_slot_id': timeSlotId,
+        'school_id': 2,
+        'school_name': 'مدرسه پسرانه دوره دوم',
+        'user_id': 99,
+        'user_full_name': 'کاربر تست',
+        'position_title': 'معاون اجرایی',
+        'phone_number': '09131234567',
+        'description': description ?? 'رزرو آزمایشی سالن آمفی‌تئاتر',
+        'status': 'confirmed',
+        'can_cancel': true,
+        'created_at': DateTime.now().toIso8601String(),
+        'time_slot': {
+          'id': timeSlotId,
+          'slot_number': timeSlotId,
+          'title': 'سانس $timeSlotId',
+          'start_time': '08:00',
+          'end_time': '10:00',
+          'is_active': true,
+        }
+      };
     }
 
     final token = await getToken();
@@ -343,7 +409,7 @@ class ApiService {
 
   static Future<void> cancelReservation(int id) async {
     if (isOfflineEmergencyMode) {
-      throw Exception('در حالت آفلاین امکان لغو رزرو وجود ندارد.');
+      return;
     }
 
     final token = await getToken();

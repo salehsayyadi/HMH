@@ -111,5 +111,33 @@ async def init_database_data(db: AsyncSession):
         db.add(sample_user)
         await db.commit()
 
-    # 6. Seed Holidays
+    # 6. Create standard test user (test / test) for testing reservations and ordinary user access
+    test_user_res = await db.execute(select(User).where(User.username == "test"))
+    if not test_user_res.scalars().first():
+        sch_res = await db.execute(select(School).where(School.name == "مدرسه پسرانه دوره دوم"))
+        sch_test = sch_res.scalars().first()
+        if not sch_test:
+            sch_test = (await db.execute(select(School).limit(1))).scalars().first()
+        pos_res = await db.execute(select(Position).where(Position.title == "معاون اجرایی"))
+        pos_test = pos_res.scalars().first()
+        if not pos_test:
+            pos_test = (await db.execute(select(Position).limit(1))).scalars().first()
+
+        test_user = User(
+            username="test",
+            password_hash=get_password_hash("test"),
+            first_name="کاربر",
+            last_name="تست",
+            school_id=sch_test.id if sch_test else None,
+            position_id=pos_test.id if pos_test else None,
+            role="user",
+            phone_number="09131234567",
+            is_active=True,
+            must_change_password=False
+        )
+        db.add(test_user)
+        await db.commit()
+        logger.info("Standard test user (test / test) created successfully.")
+
+    # 7. Seed Holidays
     await seed_default_holidays_if_empty(db, year=1403)

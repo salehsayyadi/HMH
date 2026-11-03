@@ -23,9 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Default hint placeholder - clean for production
-    _usernameController.text = '123IMHModirkol@1090';
-    _passwordController.text = '123IMHModirkol@1090';
+    // Default credentials set to test user for reservation testing
+    _usernameController.text = 'test';
+    _passwordController.text = 'test';
   }
 
   Future<void> _handleLogin() async {
@@ -363,6 +363,42 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Quick login presets for testing
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          ActionChip(
+                            avatar: const Icon(Icons.person_outline, size: 16, color: AppColors.primaryGreen),
+                            label: const Text('کاربر آزمایشی (test / test)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            backgroundColor: AppColors.veryLightGreen,
+                            side: const BorderSide(color: AppColors.cardBorder),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            onPressed: () {
+                              setState(() {
+                                _usernameController.text = 'test';
+                                _passwordController.text = 'test';
+                              });
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16, color: AppColors.darkGreen),
+                            label: const Text('مدیر ارشد سامانه', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            backgroundColor: AppColors.veryLightGreen,
+                            side: const BorderSide(color: AppColors.cardBorder),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            onPressed: () {
+                              setState(() {
+                                _usernameController.text = '123IMHModirkol@1090';
+                                _passwordController.text = '123IMHModirkol@1090';
+                              });
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),

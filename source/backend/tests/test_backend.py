@@ -149,3 +149,35 @@ async def test_reports_and_system_health():
         health_resp = await client.get("/api/v1/system/health")
         assert health_resp.status_code == 200
         assert health_resp.json()["status"] == "healthy"
+
+@pytest.mark.asyncio
+async def test_test_user_login_and_reservation():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Login with test / test credentials
+        login_resp = await client.post("/api/v1/auth/login", json={
+            "username": "test",
+            "password": "test"
+        })
+        assert login_resp.status_code == 200, login_resp.text
+        data = login_resp.json()
+        assert "access_token" in data
+        assert data["must_change_password"] is False
+        assert data["user"]["role"] == "user"
+        assert data["user"]["username"] == "test"
+
+        token = data["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 2. Test user creates a reservation
+        target_date = str(date.today() + timedelta(days=3))
+        res = await client.post("/api/v1/reservations", json={
+            "reservation_date": target_date,
+            "time_slot_id": 1,
+            "description": "آزمایش صفحه رزرو توسط کاربر عادی test"
+        }, headers=headers)
+        assert res.status_code == 201, res.text
+        created = res.json()
+        assert created["status"] == "confirmed"
+        assert created["user_full_name"] == "کاربر تست"
+        assert created["school_name"] == "مدرسه پسرانه دوره دوم"

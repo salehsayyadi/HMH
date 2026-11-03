@@ -34,6 +34,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onSuccess }) => {
         body: JSON.stringify({ username, password })
       });
 
+      if (data.user.role !== 'super_admin') {
+        setError('کاربر «test» سطح دسترسی عادی مدارس دارد و جهت ثبت رزرو در اپلیکیشن ویندوز تنظیم شده است. برای ورود به پنل وب مدیریت، از حساب مدیر ارشد استفاده نمایید.');
+        return;
+      }
+
       setTokens(data.access_token, data.refresh_token);
 
       if (data.must_change_password) {
@@ -43,6 +48,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onSuccess }) => {
         onSuccess(data.user);
       }
     } catch (err: any) {
+      if (username.trim().toLowerCase() === 'test' && password === 'test') {
+        setError('کاربر «test» سطح دسترسی عادی مدارس دارد و جهت ثبت رزرو در اپلیکیشن ویندوز تنظیم شده است. برای ورود به پنل وب مدیریت، از حساب مدیر ارشد استفاده نمایید.');
+        return;
+      }
       if (username.trim() === '123IMHModirkol@1090' && password === '123IMHModirkol@1090') {
         const offlineUser: UserType = {
           id: 1,
