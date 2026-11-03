@@ -50,6 +50,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   ::SetWindowTextW(window.GetHandle(), persianTitle);
+  ::ShowWindow(window.GetHandle(), SW_MAXIMIZE);
 
   window.SetQuitOnClose(true);
 
