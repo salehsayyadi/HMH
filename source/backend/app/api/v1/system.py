@@ -10,14 +10,17 @@ router = APIRouter(prefix="/system", tags=["System & Server"])
 
 @router.get("/health")
 async def health_check():
+    import asyncio
     db_connected = False
     db_error = None
     try:
         from sqlalchemy import text
         from app.core.database import AsyncSessionLocal
         async with AsyncSessionLocal() as session:
-            await session.execute(text("SELECT 1"))
+            await asyncio.wait_for(session.execute(text("SELECT 1")), timeout=2.5)
             db_connected = True
+    except asyncio.TimeoutError:
+        db_error = "تاخیر در پاسخگویی پایگاه‌داده (Timeout)"
     except Exception as e:
         db_error = str(e)
 

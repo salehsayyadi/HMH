@@ -611,7 +611,7 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> checkHealth() async {
-    final response = await http.get(Uri.parse('$baseUrl/system/health')).timeout(const Duration(seconds: 4));
+    final response = await http.get(Uri.parse('$baseUrl/system/health')).timeout(const Duration(seconds: 20));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       return (data is Map<String, dynamic>) ? data : <String, dynamic>{};

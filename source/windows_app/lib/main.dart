@@ -89,6 +89,8 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       maximizeAppWindow();
+      Future.delayed(const Duration(milliseconds: 200), maximizeAppWindow);
+      Future.delayed(const Duration(milliseconds: 600), maximizeAppWindow);
     });
     _checkAuth();
   }
@@ -98,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     try {
-      final token = await ApiService.getToken().timeout(const Duration(milliseconds: 500), onTimeout: () => null);
+      final token = await ApiService.getToken().timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (token == null || token.isEmpty || token.startsWith('offline_')) {
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
@@ -107,7 +109,7 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
-      final res = await ApiService.getMe().timeout(const Duration(milliseconds: 1000));
+      final res = await ApiService.getMe().timeout(const Duration(seconds: 8));
       final user = UserModel.fromJson(res);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

@@ -12,21 +12,30 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   bool _checking = false;
   bool _serverOnline = true;
-  String _apiStatus = 'پاسخگویی سریع و پایدار';
+  bool _dbOnline = true;
+  int _latencyMs = 0;
+  String _apiStatus = 'در حال استعلام وضعیت سرویس...';
 
   Future<void> _checkServer() async {
     setState(() {
       _checking = true;
     });
     try {
-      final res = await ApiService.checkHealth();
+      final res = await ApiService.testServerConnection();
       setState(() {
-        _serverOnline = (res['status'] == 'healthy');
-        _apiStatus = 'نسخه ${res['version']} — وضعیت عادی';
+        _serverOnline = (res['apiConnected'] == true);
+        _dbOnline = (res['dbConnected'] == true);
+        _latencyMs = res['latencyMs'] is int ? res['latencyMs'] : 0;
+        final ver = res['version'] ?? '1.0.0';
+        _apiStatus = _serverOnline
+            ? 'نسخه $ver — پاسخگویی پایدار'
+            : (res['message'] ?? 'عدم دسترسی به سرور مرکزی');
       });
     } catch (_) {
       setState(() {
         _serverOnline = false;
+        _dbOnline = false;
+        _latencyMs = 0;
         _apiStatus = 'عدم دسترسی به سرور مرکزی';
       });
     } finally {
@@ -57,40 +66,34 @@ class _AboutScreenState extends State<AboutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Organization Header
-              Row(
-                children: [
-                  Container(
-                    height: 72,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.cardBorder),
+              // Organization Header (Clean without logo per user requirement)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.veryLightGreen.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مرکزی',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                     ),
-                    child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-                  ),
-                  const SizedBox(width: 20),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مرکزی',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد',
-                        style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'نسخه تولیدی سامانه: ۱.۰.۱۱',
-                        style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ],
+                    SizedBox(height: 6),
+                    Text(
+                      'موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد',
+                      style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'نسخه تولیدی سامانه: ۱.۰.۱۵',
+                      style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
 
@@ -116,6 +119,20 @@ class _AboutScreenState extends State<AboutScreen> {
                       _serverOnline ? 'متصل (Online)' : 'قطع ارتباط (Offline)',
                       _serverOnline ? AppColors.darkGreen : AppColors.holidayRedText,
                       _serverOnline ? Icons.cloud_done : Icons.cloud_off,
+                    ),
+                    const Divider(height: 20, color: AppColors.cardBorder),
+                    _buildStatusRow(
+                      'وضعیت پایگاه‌داده متمرکز (MySQL):',
+                      _dbOnline ? 'متصل و آماده پردازش (Connected)' : 'عدم دسترسی به پایگاه‌داده',
+                      _dbOnline ? AppColors.darkGreen : AppColors.holidayRedText,
+                      _dbOnline ? Icons.dns : Icons.error_outline,
+                    ),
+                    const Divider(height: 20, color: AppColors.cardBorder),
+                    _buildStatusRow(
+                      'تاخیر پاسخگویی (Latency):',
+                      _latencyMs > 0 ? '$_latencyMs میلی‌ثانیه' : (_serverOnline ? 'کمتر از ۱ ثانیه' : 'نامشخص'),
+                      _latencyMs < 500 ? AppColors.darkGreen : AppColors.orangeWarning,
+                      Icons.speed,
                     ),
                     const Divider(height: 20, color: AppColors.cardBorder),
                     _buildStatusRow(
@@ -147,8 +164,11 @@ class _AboutScreenState extends State<AboutScreen> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: _checking ? null : _checkServer,
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('بررسی مجدد اتصال به سرور', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    icon: _checking
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen))
+                        : const Icon(Icons.refresh, size: 18),
+                    label: Text(_checking ? 'در حال بررسی...' : 'بررسی مجدد اتصال به سرور',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryGreen,
                       side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),

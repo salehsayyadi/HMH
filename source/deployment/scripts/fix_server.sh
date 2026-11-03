@@ -55,6 +55,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
       TZ: Asia/Tehran
+    command: --skip-name-resolve --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -117,6 +118,7 @@ git clone --depth 1 https://github.com/salehsayyadi/HMH.git "${TEMP_DIR}" > /dev
 mkdir -p "${HMH_DIR}/backend"
 cp -rf "${TEMP_DIR}/source/backend/"* "${HMH_DIR}/backend/"
 cp -f "${TEMP_DIR}/source/deployment/docker/Dockerfile.backend" "${HMH_DIR}/backend/Dockerfile"
+cp -f "${TEMP_DIR}/source/deployment/nginx/nginx.conf" "${HMH_DIR}/nginx.conf"
 rm -rf "${TEMP_DIR}"
 
 echo -e "${CYAN}[۴/۵] ساخت ایمیج بک‌اند و روشن کردن MySQL...${NC}"

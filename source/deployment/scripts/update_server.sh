@@ -32,7 +32,17 @@ fi
 
 cd "${HMH_DIR}"
 
-echo -e "${CYAN}[۱/۵] بررسی و تصحیح پیکربندی docker-compose.yml...${NC}"
+# ۱. تشخیص دستور داکر کامپوز
+if docker compose version &>/dev/null; then
+    DC="docker compose"
+elif command -v docker-compose &>/dev/null; then
+    DC="docker-compose"
+else
+    apt-get update -qq && apt-get install -y -qq docker-compose-plugin || apt-get install -y -qq docker-compose || true
+    DC="docker compose"
+fi
+
+echo -e "${CYAN}[۱/۵] بررسی و تصحیح پیکربندی docker-compose.yml با بهینه‌سازی سرعت...${NC}"
 cat << 'EOF' > /opt/hmh/docker-compose.yml
 services:
   mysql:
@@ -45,6 +55,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
       TZ: Asia/Tehran
+    command: --skip-name-resolve --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -101,46 +112,48 @@ networks:
 EOF
 
 TEMP_DIR=$(mktemp -d)
-echo -e "${CYAN}[۲/۵] دریافت آخرین نسخه کدهای بک‌اند از مخزن گیت‌هاب...${NC}"
+echo -e "${CYAN}[۲/۵] دریافت آخرین نسخه کدهای بک‌اند و تنظیمات انجین‌اکس از مخزن گیت‌هاب...${NC}"
 git clone --depth 1 https://github.com/salehsayyadi/HMH.git "${TEMP_DIR}" > /dev/null 2>&1
 
 mkdir -p "${HMH_DIR}/backend"
 cp -rf "${TEMP_DIR}/source/backend/"* "${HMH_DIR}/backend/"
 cp -f "${TEMP_DIR}/source/deployment/docker/Dockerfile.backend" "${HMH_DIR}/backend/Dockerfile"
+cp -f "${TEMP_DIR}/source/deployment/nginx/nginx.conf" "${HMH_DIR}/nginx.conf"
 rm -rf "${TEMP_DIR}"
 
 echo -e "${CYAN}[۳/۵] بازسازی (Build) ایمیج بک‌اند بدون کش...${NC}"
-docker compose build --no-cache backend
+$DC build --no-cache backend
 
-echo -e "${CYAN}[۴/۵] بررسی و فعال‌سازی پایگاه‌داده MySQL...${NC}"
-docker compose up -d mysql
+echo -e "${CYAN}[۴/۵] بررسی و فعال‌سازی پایگاه‌داده MySQL (با بهینه‌سازی بدون معطلی DNS)...${NC}"
+$DC up -d mysql
 
-echo "  در حال انتظار برای پاسخگویی پایگاه‌داده (حداکثر ۶۰ ثانیه)..."
-for i in {1..30}; do
-    if docker compose exec -T mysql mysqladmin ping -h localhost -u root -pRootSecPass1090 --silent > /dev/null 2>&1; then
+echo "  در حال انتظار برای پاسخگویی پایگاه‌داده (حداکثر ۲۵ ثانیه)..."
+for i in {1..25}; do
+    if docker exec hmh_mysql mysqladmin ping -h localhost -u root -pRootSecPass1090 --silent 2>/dev/null; then
         echo -e "  ${GREEN}پایگاه داده MySQL فعال و آماده اتصال است.${NC}"
         break
     fi
     echo -n "."
-    sleep 2
+    sleep 1
 done
 echo ""
 
 # تنظیم و بازسازی مجوز کاربر amphitheater_app در MySQL
-docker compose exec -T mysql mysql -u root -pRootSecPass1090 -e "
+docker exec hmh_mysql mysql -u root -pRootSecPass1090 -e "
 CREATE DATABASE IF NOT EXISTS amphitheater_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'amphitheater_app'@'%' IDENTIFIED BY 'AppSecPass1090';
 ALTER USER 'amphitheater_app'@'%' IDENTIFIED BY 'AppSecPass1090';
 GRANT ALL PRIVILEGES ON amphitheater_db.* TO 'amphitheater_app'@'%';
 FLUSH PRIVILEGES;
-" || true
+" 2>/dev/null || true
 
-echo -e "${CYAN}[۵/۵] راه‌اندازی سرویس بک‌اند و اجرای اسکریپت پایگاه‌داده...${NC}"
-docker compose up -d
+echo -e "${CYAN}[۵/۵] راه‌اندازی سرویس‌های بک‌اند و انجین‌اکس و اجرای اسکریپت پایگاه‌داده...${NC}"
+$DC up -d
+docker exec hmh_nginx nginx -s reload 2>/dev/null || true
 
-sleep 3
+sleep 2
 
-docker compose exec -T backend python -c "
+docker exec hmh_backend python -c "
 import asyncio
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.init_db import init_database_data
@@ -156,7 +169,7 @@ try:
     asyncio.run(init())
 except Exception as e:
     print('Init notice:', e)
-"
+" 2>/dev/null || true
 
 echo -e "${GREEN}${BOLD}"
 echo "=============================================================================="
