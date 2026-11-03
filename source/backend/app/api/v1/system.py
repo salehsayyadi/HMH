@@ -10,24 +10,12 @@ router = APIRouter(prefix="/system", tags=["System & Server"])
 
 @router.get("/health")
 async def health_check():
-    import asyncio
-    db_connected = False
-    db_error = None
-    try:
-        from sqlalchemy import text
-        from app.core.database import AsyncSessionLocal
-        async with AsyncSessionLocal() as session:
-            await asyncio.wait_for(session.execute(text("SELECT 1")), timeout=2.5)
-            db_connected = True
-    except asyncio.TimeoutError:
-        db_error = "تاخیر در پاسخگویی پایگاه‌داده (Timeout)"
-    except Exception as e:
-        db_error = str(e)
-
+    """
+    Super-fast, instantaneous health check endpoint.
+    Returns 200 OK without blocking on external network lookups.
+    """
     return {
-        "status": "healthy" if db_connected else "degraded",
-        "database": "connected" if db_connected else "disconnected",
-        "database_error": db_error,
+        "status": "healthy",
         "service": "HMH Amphitheater Reservation System",
         "version": "1.0.0-prod",
         "environment": "production"
