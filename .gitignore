@@ -63,6 +63,8 @@ ephemeral/
 *.zip
 
 # Database / Secrets
+github_token.txt
+*.token
 *.sqlite3
 *.db
 *.sql
