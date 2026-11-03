@@ -1,13 +1,12 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.core.config import settings
-from app.core.database import engine, Base, AsyncSessionLocal
-from app.core.init_db import init_database_data
 from app.core.security import decode_token
 from app.websocket.manager import manager
 
@@ -27,57 +26,72 @@ from app.api.v1.system import router as system_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("hmh.main")
 
+async def init_schema_and_data(is_sqlite: bool = False) -> bool:
+    try:
+        from app.core.database import engine, AsyncSessionLocal, Base
+        from app.core.init_db import init_database_data
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as session:
+            await init_database_data(session)
+        logger.info(f"Database schema & initial data initialized (mode: {'sqlite' if is_sqlite else 'mysql'}).")
+        return True
+    except Exception as e:
+        logger.warning(f"Database initialization step failed ({'sqlite' if is_sqlite else 'mysql'}): {e}")
+        return False
+
+async def background_db_init():
+    # Retry MySQL up to 15 times with 2-second sleep so warming-up MySQL succeeds
+    for attempt in range(1, 16):
+        try:
+            logger.info(f"Connecting to MySQL database (attempt {attempt}/15)...")
+            success = await init_schema_and_data(is_sqlite=False)
+            if success:
+                logger.info("MySQL connection established and schema initialized.")
+                return
+        except Exception as e:
+            logger.warning(f"MySQL connection attempt {attempt} failed: {e}")
+        await asyncio.sleep(2)
+
+    # If MySQL is completely unavailable, switch to local SQLite fallback
+    logger.warning("Could not connect to MySQL. Initializing resilient SQLite local database fallback...")
+    try:
+        import app.core.database as db_mod
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+        fallback_db = Path("/app/amphitheater_local.db")
+        if not fallback_db.parent.exists():
+            fallback_db = Path(__file__).resolve().parent.parent / "amphitheater_local.db"
+        fallback_url = f"sqlite+aiosqlite:///{fallback_db.as_posix()}"
+        fallback_engine = create_async_engine(fallback_url, echo=False, future=True)
+        db_mod.engine = fallback_engine
+        db_mod.AsyncSessionLocal = async_sessionmaker(
+            bind=fallback_engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+            autocommit=False
+        )
+        await init_schema_and_data(is_sqlite=True)
+        logger.info("Resilient SQLite fallback initialized successfully.")
+    except Exception as fb_err:
+        logger.error(f"Error initializing SQLite fallback: {fb_err}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing database schema...")
-    # Robust retry loop: wait for MySQL to complete initialization
-    connected = False
-    for attempt in range(1, 61):
-        try:
-            logger.info(f"Connecting to database (attempt {attempt}/60)...")
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            connected = True
-            logger.info("Database connection established and schema initialized.")
-            break
-        except Exception as e:
-            logger.warning(f"Database not ready yet ({e}), retrying in 2 seconds...")
-            await asyncio.sleep(2)
+    # Try quick initial connection
+    try:
+        from app.core.database import engine, Base, AsyncSessionLocal
+        from app.core.init_db import init_database_data
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as session:
+            await init_database_data(session)
+        logger.info("Database connection established immediately on startup.")
+    except Exception as e:
+        logger.warning(f"Initial DB connection not ready yet ({e}); delegating to background retry...")
+        asyncio.create_task(background_db_init())
 
-    if connected:
-        try:
-            async with AsyncSessionLocal() as session:
-                logger.info("Seeding initial database data...")
-                await init_database_data(session)
-                logger.info("Initial data seeded successfully.")
-        except Exception as e:
-            logger.error(f"Error seeding initial database data: {e}")
-    else:
-        logger.warning("Could not connect to MySQL. Initializing resilient SQLite local database fallback...")
-        try:
-            import app.core.database as db_mod
-            from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-            from pathlib import Path
-            fallback_db = Path(__file__).resolve().parent.parent.parent / "amphitheater_local.db"
-            fallback_url = f"sqlite+aiosqlite:///{fallback_db.as_posix()}"
-            fallback_engine = create_async_engine(fallback_url, echo=False, future=True)
-            async with fallback_engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            db_mod.engine = fallback_engine
-            db_mod.AsyncSessionLocal = async_sessionmaker(
-                bind=fallback_engine,
-                class_=AsyncSession,
-                expire_on_commit=False,
-                autoflush=False,
-                autocommit=False
-            )
-            async with db_mod.AsyncSessionLocal() as session:
-                logger.info("Seeding initial database data into SQLite fallback...")
-                await init_database_data(session)
-                logger.info("Initial data seeded successfully in SQLite fallback.")
-        except Exception as fb_err:
-            logger.error(f"Error initializing SQLite fallback: {fb_err}")
-
+    # Lifespan yields immediately so Uvicorn starts listening on port 8000 instantly!
     yield
     logger.info("Shutting down application...")
 
