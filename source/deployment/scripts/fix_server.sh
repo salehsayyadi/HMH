@@ -55,7 +55,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-amphitheater_app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AppSecPass1090}
       TZ: Asia/Tehran
-    command: --skip-name-resolve --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    command: --skip-name-resolve --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
