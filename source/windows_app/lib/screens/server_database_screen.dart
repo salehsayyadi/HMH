@@ -172,22 +172,29 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
 
               // Test message banner if any
               if (_testMessage != null) ...[
-                final isFullSuccess = _apiConnected && _dbConnected;
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isFullSuccess ? AppColors.veryLightGreen : (_apiConnected ? Colors.amber.shade50 : AppColors.error),
+                    color: (_apiConnected && _dbConnected)
+                        ? AppColors.veryLightGreen
+                        : (_apiConnected ? Colors.amber.shade50 : AppColors.error),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isFullSuccess ? AppColors.pastelGreen : (_apiConnected ? Colors.amber.shade300 : Colors.red.shade200),
+                      color: (_apiConnected && _dbConnected)
+                          ? AppColors.pastelGreen
+                          : (_apiConnected ? Colors.amber.shade300 : Colors.red.shade200),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        isFullSuccess ? Icons.check_circle_rounded : (_apiConnected ? Icons.warning_amber_rounded : Icons.error_outline_rounded),
-                        color: isFullSuccess ? AppColors.primaryGreen : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
+                        (_apiConnected && _dbConnected)
+                            ? Icons.check_circle_rounded
+                            : (_apiConnected ? Icons.warning_amber_rounded : Icons.error_outline_rounded),
+                        color: (_apiConnected && _dbConnected)
+                            ? AppColors.primaryGreen
+                            : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
                         size: 22,
                       ),
                       const SizedBox(width: 12),
@@ -197,7 +204,9 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: isFullSuccess ? AppColors.darkGreen : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
+                            color: (_apiConnected && _dbConnected)
+                                ? AppColors.darkGreen
+                                : (_apiConnected ? Colors.amber.shade900 : AppColors.holidayRedText),
                           ),
                         ),
                       ),
