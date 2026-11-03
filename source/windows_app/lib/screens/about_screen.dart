@@ -131,7 +131,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     _buildStatusRow(
                       'تاخیر پاسخگویی (Latency):',
                       _latencyMs > 0 ? '$_latencyMs میلی‌ثانیه' : (_serverOnline ? 'کمتر از ۱ ثانیه' : 'نامشخص'),
-                      _latencyMs < 500 ? AppColors.darkGreen : AppColors.orangeWarning,
+                      _latencyMs < 500 ? AppColors.darkGreen : const Color(0xFFD97706),
                       Icons.speed,
                     ),
                     const Divider(height: 20, color: AppColors.cardBorder),
