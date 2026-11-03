@@ -92,9 +92,9 @@ LOG_LEVEL=INFO
 
 SERVER_OS="Ubuntu 24.04 LTS"
 DOMAIN=salehvip-clud.ir
-SUBDOMAIN=reserve.salehvip-clud.ir
-API_BASE_URL=https://reserve.salehvip-clud.ir/api/v1
-WEBSOCKET_URL=wss://reserve.salehvip-clud.ir/ws
+SUBDOMAIN=kirkir.salehvip-clud.ir
+API_BASE_URL=https://kirkir.salehvip-clud.ir/api/v1
+WEBSOCKET_URL=wss://kirkir.salehvip-clud.ir/ws
 HTTP_PORT=80
 HTTPS_PORT=443
 
@@ -116,7 +116,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 INITIAL_ADMIN_USERNAME=123IMHModirkol@1090
 INITIAL_ADMIN_PASSWORD=123IMHModirkol@1090
 
-CORS_ORIGINS=["https://reserve.salehvip-clud.ir","http://localhost:3000","http://localhost:5173","http://localhost:8000","http://localhost","http://127.0.0.1:8000"]
+CORS_ORIGINS=["https://kirkir.salehvip-clud.ir","https://reserve.salehvip-clud.ir","http://localhost:3000","http://localhost:5173","http://localhost:8000","http://localhost","http://127.0.0.1:8000"]
 EOF
 
 # 5. Generate Standalone docker-compose.yml (MySQL + FastAPI Backend + Nginx SSL)
@@ -127,7 +127,7 @@ services:
     image: mysql:8.0
     container_name: hmh_mysql
     restart: always
-    command: --default-authentication-plugin=mysql_native_password
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootSecPass1090}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-amphitheater_db}
@@ -163,7 +163,7 @@ services:
       INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-123IMHModirkol@1090}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-123IMHModirkol@1090}
       DOMAIN: ${DOMAIN:-salehvip-clud.ir}
-      SUBDOMAIN: ${SUBDOMAIN:-reserve.salehvip-clud.ir}
+      SUBDOMAIN: ${SUBDOMAIN:-kirkir.salehvip-clud.ir}
     networks:
       - hmh_net
 
@@ -218,7 +218,7 @@ http {
     # HTTP Server -> Redirect to HTTPS
     server {
         listen 80;
-        server_name salehvip-clud.ir reserve.salehvip-clud.ir;
+        server_name salehvip-clud.ir kirkir.salehvip-clud.ir reserve.salehvip-clud.ir;
 
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
@@ -231,11 +231,11 @@ http {
 
     # HTTPS Server
     server {
-        listen 443 ssl http2;
-        server_name salehvip-clud.ir reserve.salehvip-clud.ir;
+        listen 443 ssl;
+        server_name salehvip-clud.ir kirkir.salehvip-clud.ir reserve.salehvip-clud.ir;
 
-        ssl_certificate /etc/letsencrypt/live/reserve.salehvip-clud.ir/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/reserve.salehvip-clud.ir/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/kirkir.salehvip-clud.ir/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/kirkir.salehvip-clud.ir/privkey.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers on;
@@ -285,7 +285,7 @@ EOF
 
 # 7. SSL Preparation (Initial Self-Signed Certificate to ensure immediate startup)
 echo -e "${CYAN}[۴/۶] آماده‌سازی گواهی امنیتی SSL...${NC}"
-CERT_DIR="/etc/letsencrypt/live/reserve.salehvip-clud.ir"
+CERT_DIR="/etc/letsencrypt/live/kirkir.salehvip-clud.ir"
 mkdir -p "${CERT_DIR}"
 mkdir -p /var/www/certbot
 
@@ -294,7 +294,7 @@ if [ ! -f "${CERT_DIR}/fullchain.pem" ] || [ ! -f "${CERT_DIR}/privkey.pem" ]; t
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "${CERT_DIR}/privkey.pem" \
         -out "${CERT_DIR}/fullchain.pem" \
-        -subj "/CN=reserve.salehvip-clud.ir/O=HMH/C=IR" > /dev/null 2>&1
+        -subj "/CN=kirkir.salehvip-clud.ir/O=HMH/C=IR" > /dev/null 2>&1
 fi
 
 # Configure UFW firewall
@@ -306,9 +306,16 @@ fi
 
 # 8. Start Services
 echo -e "${CYAN}[۵/۶] راه‌اندازی کانتینر پایگاه داده MySQL و وب‌سرویس مرکزی...${NC}"
-docker compose down -v --remove-orphans > /dev/null 2>&1 || true
-docker compose build --quiet backend
-docker compose up -d
+if docker compose version &>/dev/null; then
+    DC="docker compose"
+elif command -v docker-compose &>/dev/null; then
+    DC="docker-compose"
+else
+    DC="docker compose"
+fi
+$DC down -v --remove-orphans > /dev/null 2>&1 || true
+$DC build --quiet backend
+$DC up -d
 
 # 9. Verification
 echo -e "${CYAN}[۶/۶] بررسی برقراری ارتباط پایگاه داده و وب‌سرویس...${NC}"
@@ -372,10 +379,10 @@ echo -e "${GREEN}${BOLD}  پایگاه‌داده و وب‌سرویس سرور 
 echo -e "${GREEN}${BOLD}==============================================================================${NC}"
 echo ""
 echo -e "  ${BOLD}مشخصات اتصال برنامه ویندوز به سرور:${NC}"
-echo -e "  • آدرس اتصال برنامه:    ${CYAN}https://reserve.salehvip-clud.ir/api/v1${NC}"
+echo -e "  • آدرس اتصال برنامه:    ${CYAN}https://kirkir.salehvip-clud.ir/api/v1${NC}"
 echo -e "  • وضعیت سلامت وب‌سرویس: ${GREEN}${HEALTH}${NC}"
-echo -e "  • وب‌سوکت تقویم زنده:   ${CYAN}wss://reserve.salehvip-clud.ir/ws${NC}"
-echo -e "  • مستندات وب‌سرویس:     ${CYAN}https://reserve.salehvip-clud.ir/docs${NC}"
+echo -e "  • وب‌سوکت تقویم زنده:   ${CYAN}wss://kirkir.salehvip-clud.ir/ws${NC}"
+echo -e "  • مستندات وب‌سرویس:     ${CYAN}https://kirkir.salehvip-clud.ir/docs${NC}"
 echo ""
 echo -e "  ${BOLD}اطلاعات حساب پیش‌فرض مدیر ارشد:${NC}"
 echo -e "  • نام کاربری: ${YELLOW}123IMHModirkol@1090${NC}"
