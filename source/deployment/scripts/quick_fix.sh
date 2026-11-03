@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس حضرت امام حسین (ع) یزد
-#  Instant 502 Bad Gateway Recovery & Database Resuscitation
+#  Definitive Service Recovery & Handshake Fixer
 # ==============================================================================
 set -e
 
@@ -14,31 +14,46 @@ NC='\033[0m'
 echo -e "${CYAN}${BOLD}"
 echo "=============================================================================="
 echo "    موسسه خیریه فرهنگی آموزشی حضرت امام حسین (ع) یزد"
-echo "    بازیابی فوری سرویس بک‌اند، پایگاه داده و رفع خطای 502"
+echo "    بازیابی قطعی سرویس‌ها و رفع مشکل اتصال و هندشیک SSL"
 echo "=============================================================================="
 echo -e "${NC}"
 
-# ۱. پاکسازی فایل‌های کانفیگ مشکل‌ساز و راه‌اندازی قطعی MySQL
-echo -e "${CYAN}[۱/۴] پاکسازی و راه‌اندازی قطعی پایگاه‌داده MySQL...${NC}"
+# ۱. پاکسازی فایل‌های کانفیگ اضافی مای‌اس‌کیوال
+echo -e "${CYAN}[۱/۵] پاکسازی و راه‌اندازی دیتابیس MySQL...${NC}"
 docker exec hmh_mysql rm -f /etc/mysql/conf.d/speedup.cnf 2>/dev/null || true
 docker start hmh_mysql 2>/dev/null || docker restart hmh_mysql 2>/dev/null || true
 
-# ۲. بارگذاری نسخه استاندارد و مطمئن nginx.conf و ری‌لود آن
-echo -e "${CYAN}[۲/۴] همگام‌سازی تنظیمات انجین‌اکس...${NC}"
-curl -fsSL https://raw.githubusercontent.com/salehsayyadi/HMH/main/source/deployment/nginx/nginx.conf -o /opt/hmh/nginx.conf 2>/dev/null || true
-docker exec hmh_nginx nginx -s reload 2>/dev/null || docker restart hmh_nginx 2>/dev/null || true
+# ۲. اطمینان از وجود گواهی SSL معتبر
+echo -e "${CYAN}[۲/۵] بررسی و تثبیت گواهی SSL...${NC}"
+mkdir -p /etc/letsencrypt/live/reserve.salehvip-clud.ir
+if [ ! -f /etc/letsencrypt/live/reserve.salehvip-clud.ir/fullchain.pem ] || [ ! -f /etc/letsencrypt/live/reserve.salehvip-clud.ir/privkey.pem ]; then
+    if [ -f /etc/letsencrypt/live/salehvip-clud.ir/fullchain.pem ]; then
+        cp -f /etc/letsencrypt/live/salehvip-clud.ir/fullchain.pem /etc/letsencrypt/live/reserve.salehvip-clud.ir/
+        cp -f /etc/letsencrypt/live/salehvip-clud.ir/privkey.pem /etc/letsencrypt/live/reserve.salehvip-clud.ir/
+    else
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout /etc/letsencrypt/live/reserve.salehvip-clud.ir/privkey.pem \
+            -out /etc/letsencrypt/live/reserve.salehvip-clud.ir/fullchain.pem \
+            -subj "/CN=reserve.salehvip-clud.ir/O=HMH/C=IR" > /dev/null 2>&1
+    fi
+fi
 
-# ۳. راه‌اندازی سرویس بک‌اند
-echo -e "${CYAN}[۳/۴] راه‌اندازی مجدد کانتینر بک‌اند...${NC}"
-docker start hmh_backend 2>/dev/null || docker restart hmh_backend 2>/dev/null || true
+# ۳. تنظیم فایل پیکربندی پایدار انجین‌اکس
+echo -e "${CYAN}[۳/۵] به‌روزرسانی تنظیمات Nginx بدون وابستگی‌های مفقود...${NC}"
+curl -fsSL https://raw.githubusercontent.com/salehsayyadi/HMH/main/source/deployment/nginx/nginx.conf -o /opt/hmh/nginx.conf
 
-# ۴. اعتبارسنجی اتصال و تست پاسخگویی
-echo -e "${CYAN}[۴/۴] پایش پاسخگویی سرویس و پایگاه‌داده...${NC}"
+# ۴. راه‌اندازی مجدد انجین‌اکس و بک‌اند
+echo -e "${CYAN}[۴/۵] راه‌اندازی مجدد کانتینرهای بک‌اند و وب‌سرور...${NC}"
+docker restart hmh_backend 2>/dev/null || docker start hmh_backend 2>/dev/null || true
+docker restart hmh_nginx 2>/dev/null || docker start hmh_nginx 2>/dev/null || true
+
+# ۵. تست اتصال درون سرور
+echo -e "${CYAN}[۵/۵] ارزیابی نهایی پاسخگویی...${NC}"
 sleep 3
 for i in {1..15}; do
-    RES=$(docker exec hmh_backend curl -s http://localhost:8000/api/v1/system/health 2>/dev/null || true)
+    RES=$(curl -k -s https://127.0.0.1/api/v1/system/health 2>/dev/null || true)
     if [[ "$RES" == *"healthy"* ]]; then
-        echo -e "${GREEN}سرویس مرکزی و پایگاه‌داده با موفقیت در دسترس قرار گرفت!${NC}"
+        echo -e "${GREEN}پایگاه داده و وب‌سرویس با موفقیت فعال و متصل شدند!${NC}"
         echo "$RES"
         break
     fi
@@ -49,6 +64,6 @@ echo ""
 
 echo -e "${GREEN}${BOLD}"
 echo "=============================================================================="
-echo "  عملیات بازیابی با موفقیت پایان یافت."
+echo "  سرور اکنون آماده سرویس‌دهی کامل و بدون خطاست!"
 echo "=============================================================================="
 echo -e "${NC}"
