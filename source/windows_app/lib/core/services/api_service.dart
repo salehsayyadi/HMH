@@ -113,7 +113,7 @@ class ApiService {
     try {
       final response = await http
           .get(Uri.parse('$target/system/health'))
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 20));
       stopwatch.stop();
 
       if (response.statusCode == 200) {
@@ -195,7 +195,7 @@ class ApiService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'username': username.trim(), 'password': password}),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 25));
 
       // Handle server-side 5xx errors (like 500, 502 Bad Gateway, 503, 504)
       if (response.statusCode >= 500) {
@@ -337,7 +337,7 @@ class ApiService {
           Uri.parse('$baseUrl/auth/login'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'username': activeUsername, 'password': activePassword}),
-        ).timeout(const Duration(seconds: 5));
+        ).timeout(const Duration(seconds: 20));
 
         if (res.statusCode == 200) {
           final data = _decodeResponse(res);
@@ -373,7 +373,7 @@ class ApiService {
         final meRes = await http.get(
           Uri.parse('$baseUrl/auth/me'),
           headers: {'Authorization': 'Bearer $token'},
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 15));
         if (meRes.statusCode == 200) {
           isOfflineEmergencyMode = false;
           final meData = _decodeResponse(meRes);
@@ -437,7 +437,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    ).timeout(const Duration(seconds: 3));
+    ).timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {
       return _decodeResponse(response);
@@ -463,7 +463,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    ).timeout(const Duration(seconds: 4));
+    ).timeout(const Duration(seconds: 20));
 
     if (response.statusCode == 200) {
       return _decodeResponse(response);
@@ -517,7 +517,7 @@ class ApiService {
         'title': title,
         'description': description,
       }),
-    ).timeout(const Duration(seconds: 4));
+    ).timeout(const Duration(seconds: 20));
 
     final data = _decodeResponse(response);
     if (response.statusCode == 201 || response.statusCode == 200) {
@@ -537,7 +537,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    ).timeout(const Duration(seconds: 4));
+    ).timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       final data = _decodeResponse(response);
@@ -556,7 +556,7 @@ class ApiService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final data = _decodeResponse(response);
@@ -645,7 +645,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/users'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -689,7 +689,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/schools?include_inactive=true'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -705,7 +705,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/reservations'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -728,7 +728,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/time-slots'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -744,7 +744,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/holidays'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -760,7 +760,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/restrictions'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
@@ -776,7 +776,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/reports/dashboard'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is Map<String, dynamic>) return data;
@@ -792,7 +792,7 @@ class ApiService {
       final res = await http.get(
         Uri.parse('$baseUrl/audit-logs'),
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 20));
       if (res.statusCode == 200) {
         final data = _decodeResponse(res);
         if (data is List) return data;
