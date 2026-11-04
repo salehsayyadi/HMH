@@ -25,6 +25,9 @@ class UserModel {
     required this.mustChangePassword,
   });
 
+  _NamedObject? get school => schoolName != null ? _NamedObject(schoolName!) : null;
+  _TitledObject? get position => positionTitle != null ? _TitledObject(positionTitle!) : null;
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final fName = (json['first_name'] as String?) ?? 'مدیر';
     final lName = (json['last_name'] as String?) ?? 'ارشد';
@@ -44,4 +47,14 @@ class UserModel {
       mustChangePassword: (json['must_change_password'] as bool?) ?? false,
     );
   }
+}
+
+class _NamedObject {
+  final String name;
+  const _NamedObject(this.name);
+}
+
+class _TitledObject {
+  final String title;
+  const _TitledObject(this.title);
 }

@@ -2,6 +2,18 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+class TaghvimEvent {
+  final int day;
+  final String title;
+  final bool isHoliday;
+
+  const TaghvimEvent({
+    required this.day,
+    required this.title,
+    this.isHoliday = true,
+  });
+}
+
 /// Client-side Dynamic Taghvim.com Holiday Extraction & Local Storage Service
 /// Automatically extracts and caches official holidays month by month directly
 /// into the local PC database without cluttering the central server memory.
@@ -133,5 +145,19 @@ class TaghvimHolidayService {
     } catch (_) {
       // Silent error: Taghvim site may be unreachable, offline seed provides continuous reliability
     }
+  }
+
+  /// Get map of official holidays for a month
+  static Future<Map<int, TaghvimEvent>> getEventsForMonth(int month, [int? year]) async {
+    final y = year ?? 1405;
+    await syncMonthFromTaghvim(y, month);
+    final result = <int, TaghvimEvent>{};
+    for (int day = 1; day <= 31; day++) {
+      final title = getHolidayTitle(y, month, day);
+      if (title != null) {
+        result[day] = TaghvimEvent(day: day, title: title, isHoliday: true);
+      }
+    }
+    return result;
   }
 }

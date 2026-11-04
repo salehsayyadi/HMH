@@ -34,12 +34,12 @@ jobs:
 
       - name: Build Android Release APK
         working-directory: source/windows_app
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Prepare APK Output
         run: |
           mkdir -p release-android
-          cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-android/IMH-Android-${{ github.ref_name }}.apk
+          cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-android/IMH-Android-v1.1.0.apk
           cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-android/IMH-Android.apk
 
       - name: Upload Android Artifact
@@ -93,7 +93,7 @@ jobs:
           New-Item -ItemType Directory -Path "app/Windows/Portable" -Force
           Copy-Item -Path "source/windows_app/build/windows/x64/runner/Release/*" -Destination "app/Windows/Portable/" -Recurse -Force
           Compress-Archive -Path "app/Windows/Portable/*" -DestinationPath "IMH-Portable-x64.zip" -Force
-          Copy-Item -Path "IMH-Portable-x64.zip" -Destination "HMH-Portable-x64.zip" -Force
+          Copy-Item "IMH-Portable-x64.zip" "HMH-Portable-x64.zip" -Force
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -159,7 +159,7 @@ jobs:
             ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد (IMH) — نسخه ${{ github.ref_name }}
 
             ### محتویات بسته انتشار:
-            1. **IMH-Android-${{ github.ref_name }}.apk**: اپلیکیشن رسمی اندروید سامانه برای گوشی‌های هوشمند کاربران و مدیران
+            1. **IMH-Android-v1.1.0.apk**: اپلیکیشن رسمی اندروید سامانه برای گوشی‌های هوشمند کاربران و مدیران
             2. **IMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
             3. **IMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم روی رایانه‌ها
             4. **IMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)

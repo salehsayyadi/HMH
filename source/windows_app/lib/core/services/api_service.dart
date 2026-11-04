@@ -90,15 +90,25 @@ class ApiService {
 
   /// ذخیره پیکربندی جدید آدرس سرور
   static Future<void> saveServerConfig({
-    required String host,
-    required String protocol,
-    required String port,
-    required String apiPath,
+    String? host,
+    String? protocol,
+    String? port,
+    String? apiPath,
+    String? domain,
+    String? apiBase,
   }) async {
-    final cleanHost = host.trim().replaceAll(RegExp(r'^https?://'), '').replaceAll(RegExp(r'/.*$'), '');
-    final cleanPort = port.trim();
-    final cleanProtocol = protocol.trim().toLowerCase();
-    var cleanPath = apiPath.trim();
+    if (apiBase != null && apiBase.trim().isNotEmpty) {
+      baseUrl = apiBase.trim().replaceAll(RegExp(r'/+$'), '');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('api_base_url', baseUrl);
+      return;
+    }
+
+    final effectiveHost = (host ?? domain ?? 'kirkir.salehvip-clud.ir');
+    final cleanHost = effectiveHost.trim().replaceAll(RegExp(r'^https?://'), '').replaceAll(RegExp(r'/.*$'), '');
+    final cleanPort = (port ?? '443').trim();
+    final cleanProtocol = (protocol ?? 'https').trim().toLowerCase();
+    var cleanPath = (apiPath ?? '/api/v1').trim();
     if (!cleanPath.startsWith('/')) cleanPath = '/$cleanPath';
     cleanPath = cleanPath.replaceAll(RegExp(r'/+$'), '');
 
@@ -597,18 +607,50 @@ class ApiService {
 
   static Future<List<dynamic>> getMyHistory() => getMyReservations();
 
-  static Future<Map<String, dynamic>> createReservation({
-    required String date,
-    required int timeSlotId,
+  static Future<Map<String, dynamic>> getReservationDetail(int id) async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/reservations/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    final data = _decodeResponse(response);
+    if (response.statusCode == 200 && data is Map<String, dynamic>) {
+      return data;
+    }
+    throw Exception(data['detail'] ?? 'خطا در دریافت جزئیات رزرو');
+  }
+
+  static Future<Map<String, dynamic>> createReservation([
+    dynamic dataOrDate,
+    int? timeSlotId,
     String? title,
     String? description,
-  }) =>
-      reserveSlot(
-        timeSlotId: timeSlotId,
+  ]) {
+    if (dataOrDate is Map<String, dynamic>) {
+      final date = dataOrDate['reservation_date'] ?? dataOrDate['date'] ?? '';
+      final slotId = dataOrDate['time_slot_id'] ?? dataOrDate['slot_id'] ?? 1;
+      final t = dataOrDate['title'] as String?;
+      final desc = dataOrDate['description'] as String?;
+      final schId = dataOrDate['school_id'] as int?;
+      return reserveSlot(
+        timeSlotId: slotId,
         reservationDate: date,
+        title: t,
+        description: desc,
+        schoolId: schId,
+      );
+    } else {
+      return reserveSlot(
+        timeSlotId: timeSlotId ?? 1,
+        reservationDate: dataOrDate?.toString() ?? '',
         title: title,
         description: description,
       );
+    }
+  }
 
   static Future<Map<String, dynamic>> changePassword({
     required String currentPassword,

@@ -7,15 +7,22 @@ class MobileConfirmDialog extends StatelessWidget {
   final String confirmText;
   final String cancelText;
   final bool isDestructive;
+  final VoidCallback? onConfirm;
 
   const MobileConfirmDialog({
     super.key,
     required this.title,
     required this.message,
-    this.confirmText = 'تأیید',
-    this.cancelText = 'انصراف',
-    this.isDestructive = false,
-  });
+    String? confirmText,
+    String? cancelText,
+    String? confirmLabel,
+    String? cancelLabel,
+    bool? isDestructive,
+    bool? isDanger,
+    this.onConfirm,
+  })  : confirmText = confirmLabel ?? confirmText ?? 'تأیید',
+        cancelText = cancelLabel ?? cancelText ?? 'انصراف',
+        isDestructive = isDanger ?? isDestructive ?? false;
 
   static Future<bool?> show(
     BuildContext context, {
@@ -70,7 +77,13 @@ class MobileConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                if (onConfirm != null) {
+                  onConfirm!();
+                } else {
+                  Navigator.pop(context, true);
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDestructive ? AppColors.holidayRed : AppColors.primaryGreen,
                 foregroundColor: isDestructive ? AppColors.holidayRedText : Colors.white,
