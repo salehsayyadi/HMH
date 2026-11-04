@@ -120,11 +120,11 @@ def get_official_holidays_for_year(year: int) -> List[Tuple[int, int, str]]:
 async def seed_default_holidays_if_empty(
     db: AsyncSession,
     start_year: int = 1405,
-    end_year: int = 1415,
+    end_year: int = 1407,
     year: Optional[int] = None
 ):
     """
-    Seeds standard national holidays for years 1405 through 1415 (current and upcoming 10 years).
+    Seeds standard national holidays for 3 active years (1405 through 1407).
     Holidays are bookable by default so schools can hold special events and celebrations.
     """
     if year is not None:

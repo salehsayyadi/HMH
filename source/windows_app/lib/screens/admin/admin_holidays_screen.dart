@@ -142,7 +142,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               ),
-                              items: [now.year - 1, now.year, now.year + 1, now.year + 2]
+                              items: [now.year, now.year + 1, now.year + 2]
                                   .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
                                   .toList(),
                               onChanged: (y) {
@@ -373,26 +373,6 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                   ],
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.veryLightGreen,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.school_outlined, size: 16, color: AppColors.primaryGreen),
-                      SizedBox(width: 8),
-                      Text(
-                        'سال تحصیلی ۱۴۰۵ - ۱۴۰۶',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: _showAddDialog,
                   icon: const Icon(Icons.add_rounded, size: 20),

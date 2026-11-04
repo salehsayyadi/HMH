@@ -33,8 +33,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   List<int> get _availableYears {
     final curYear = Jalali.now().year;
-    // Current active year and up to 10 years into the future (e.g. 1405 through 1415)
-    return List.generate(11, (i) => curYear + i);
+    // Rolling 3-year selector starting from current year (e.g. 1405..1407, when 1406 => 1406..1408)
+    return List.generate(3, (i) => curYear + i);
   }
 
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
@@ -88,6 +88,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _jalaliMonth = 12;
         _jalaliYear--;
       }
+      final available = _availableYears;
+      if (_jalaliYear < available.first) {
+        _jalaliYear = available.first;
+        _jalaliMonth = 1;
+      } else if (_jalaliYear > available.last) {
+        _jalaliYear = available.last;
+        _jalaliMonth = 12;
+      }
       _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);
     });
     _loadCalendar();
@@ -102,6 +110,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _selectYear(int year) {
+    final available = _availableYears;
+    if (!available.contains(year)) return;
     setState(() {
       _jalaliYear = year;
       _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);

@@ -5,7 +5,6 @@ import '../models/user.dart';
 import 'calendar_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
-import 'about_screen.dart';
 import 'login_screen.dart';
 import 'server_settings_modal.dart';
 import 'server_database_screen.dart';
@@ -377,7 +376,7 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
-  /// 4 Section Ordinary School User Menu
+  /// 3 Section Ordinary School User Menu
   List<Widget> _buildSchoolUserNavItems() {
     return [
       _buildNavItem(0, 'صفحه اصلی (تقویم)', Icons.calendar_month_outlined),
@@ -385,8 +384,6 @@ class _MainScreenState extends State<MainScreen> {
       _buildNavItem(1, 'سوابق رزروها', Icons.history_edu_outlined),
       const SizedBox(height: 6),
       _buildNavItem(2, 'پروفایل کاربری', Icons.person_outline),
-      const SizedBox(height: 6),
-      _buildNavItem(3, 'درباره برنامه', Icons.info_outline),
     ];
   }
 
@@ -468,8 +465,6 @@ class _MainScreenState extends State<MainScreen> {
           return const HistoryScreen();
         case 2:
           return ProfileScreen(currentUser: _currentUser);
-        case 3:
-          return const AboutScreen();
         default:
           return CalendarScreen(currentUser: _currentUser);
       }
@@ -526,27 +521,20 @@ class _MainScreenState extends State<MainScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.pastelGreen.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'سال تحصیلی ۱۴۰۵ - ۱۴۰۶',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryGreen,
-                  ),
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primaryGreen,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               const Text(
                 'سامانه جامع رزرواسیون سالن آمفی‌تئاتر مرکزی IMH',
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.secondaryText,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

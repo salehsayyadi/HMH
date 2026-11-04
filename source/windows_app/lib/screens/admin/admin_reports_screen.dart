@@ -229,7 +229,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                     'ماه جاری (آبان ۱۴۰۵)',
                     'سه ماهه اخیر (فصل پاییز)',
                     'نیم‌سال اول تحصیلی',
-                    'کل سال تحصیلی ۱۴۰۳-۱۴۰۴',
+                    'کل سال جاری',
                   ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedPeriod = val);

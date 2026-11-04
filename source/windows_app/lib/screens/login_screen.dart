@@ -603,7 +603,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Icon(Icons.code_rounded, size: 15, color: AppColors.primaryGreen),
                       SizedBox(width: 8),
                       Text(
-                        'طراحی و توسعه‌یافته با افتخار توسط دانش‌آموز: محمد صالح صیادی (پایه یازدهم فنی) — سال تحصیلی ۱۴۰۵-۱۴۰۶',
+                        'طراحی و توسعه‌یافته توسط دانش‌آموز: محمد صالح صیادی (پایه یازدهم فنی)',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
