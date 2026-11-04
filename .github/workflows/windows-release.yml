@@ -104,7 +104,8 @@ jobs:
           New-Item -ItemType Directory -Path "app/Windows/Setup" -Force
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" source/deployment/scripts/HMH-Setup.iss
           if (Test-Path app/Windows/Setup/IMH-Setup-x64.exe) {
-            Copy-Item -Path app/Windows/Setup/IMH-Setup-x64.exe -Destination app/Windows/Setup/HMH-Setup-x64.exe -Force
+            Copy-Item -Path app/Windows/Setup/IMH-Setup-x64.exe -Destination "IMH-Setup-x64.exe" -Force
+            Copy-Item -Path app/Windows/Setup/IMH-Setup-x64.exe -Destination "HMH-Setup-x64.exe" -Force
           }
 
       - name: Prepare Server & Web ZIPs
@@ -120,8 +121,8 @@ jobs:
         with:
           name: windows-packages
           path: |
-            app/Windows/Setup/IMH-Setup-x64.exe
-            app/Windows/Setup/HMH-Setup-x64.exe
+            IMH-Setup-x64.exe
+            HMH-Setup-x64.exe
             IMH-Portable-x64.zip
             HMH-Portable-x64.zip
             IMH-Admin-Web.zip
