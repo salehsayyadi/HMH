@@ -100,7 +100,7 @@ class TaghvimHolidayService {
   /// and persist them to local SQLite/SharedPreferences cache on the client PC.
   static Future<void> syncMonthFromTaghvim(int year, int month) async {
     try {
-      final url = Uri.parse('https://taghvim.com/get_events/?action=get_events&year=$year&month=$month');
+      final url = Uri.parse('https://taghvim.com/get_events/?action=get_events&month=$month');
       final response = await http.get(
         url,
         headers: {
@@ -117,7 +117,7 @@ class TaghvimHolidayService {
         for (final item in data) {
           if (item is Map && item['is_holiday'] == true) {
             final day = item['day'] as int? ?? 0;
-            final title = item['name'] as String? ?? 'تعطیل رسمی';
+            final title = (item['name'] as String? ?? 'تعطیل رسمی').trim();
             final key = '$year-$month-$day';
             _memoryCache[key] = title;
             monthCache[key] = title;
@@ -127,7 +127,7 @@ class TaghvimHolidayService {
         // Save month to persistent local disk storage
         if (monthCache.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('${_prefKeyPrefix}_$year\_$month', json.encode(monthCache));
+          await prefs.setString('${_prefKeyPrefix}_${year}_$month', json.encode(monthCache));
         }
       }
     } catch (_) {

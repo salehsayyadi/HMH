@@ -68,7 +68,7 @@ from sqlalchemy import text
 
 async def cleanup():
     async with AsyncSessionLocal() as session:
-        await session.execute(text("DELETE FROM holidays WHERE is_manual = 0;"))
+        await session.execute(text("DELETE FROM holidays WHERE is_manual = 0 OR is_manual IS NULL OR source != \"manual_admin_entry\";"))
         await session.commit()
 
 asyncio.run(cleanup())

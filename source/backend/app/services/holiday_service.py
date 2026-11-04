@@ -91,10 +91,11 @@ async def seed_default_holidays_if_empty(
         await db.commit()
 
 async def get_all_holidays(db: AsyncSession) -> List[HolidayResponse]:
-    # Only return holidays from the current active academic era (1405 onwards: >= 2026-03-21)
+    # Only return manual holidays created by school admin.
+    # Official taghvim holidays are managed dynamically on the client calendar.
     res = await db.execute(
         select(Holiday)
-        .where(Holiday.holiday_date >= date(2026, 3, 20))
+        .where(Holiday.is_manual == True)
         .order_by(Holiday.holiday_date.asc())
     )
     records = res.scalars().all()
@@ -104,8 +105,8 @@ async def get_all_holidays(db: AsyncSession) -> List[HolidayResponse]:
             holiday_date=h.holiday_date,
             jalali_date=format_jalali_date(h.holiday_date),
             title=h.title,
-            is_official=h.is_official,
-            is_manual=h.is_manual,
+            is_official=False,
+            is_manual=True,
             is_booking_allowed=getattr(h, 'is_booking_allowed', True),
             source=h.source,
             created_at=h.created_at
@@ -152,9 +153,9 @@ async def delete_holiday(db: AsyncSession, holiday_id: int):
 
 async def resync_taghvim_holidays(db: AsyncSession) -> dict:
     """
-    Clears old automatic holidays and re-seeds exact 27 taghvim.com holidays for 1405..1407.
+    Cleans up all legacy automatic and duplicate holidays from MySQL database.
+    Official holidays are dynamically extracted by client apps from taghvim.com.
     """
     await db.execute(delete(Holiday).where(Holiday.is_manual == False))
     await db.commit()
-    await seed_default_holidays_if_empty(db, start_year=1405, end_year=1407)
-    return {"success": True, "message": "تعطیلات رسمی بر اساس تقویم استاندارد taghvim.com همگام‌سازی شدند."}
+    return {"success": True, "message": "تعطیلات قدیمی و تکراری از دیتابیس پاکسازی شدند. تقویم رسمی به صورت پویا از taghvim.com تامین می‌شود."}

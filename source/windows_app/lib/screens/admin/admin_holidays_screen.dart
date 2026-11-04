@@ -36,17 +36,21 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
       final mapped = <Map<String, dynamic>>[];
 
       for (final h in rawHolidays) {
-        // As requested by user: Official taghvim holidays are handled dynamically in the calendar
-        // and must NOT be shown in this admin management table. Only show custom holidays added by management!
-        final isOfficial = (h['is_official'] == true) && (h['is_manual'] != true);
-        if (isOfficial) {
+        // Strictly only show manual custom holidays added by institute management.
+        // Official calendar holidays are handled dynamically in the client calendar and must NOT appear here!
+        final isManual = (h['is_manual'] == true);
+        final isOfficial = (h['is_official'] == true);
+        final src = (h['source'] ?? '').toString();
+        final title = (h['title'] ?? '').toString();
+
+        if (!isManual || isOfficial || src.contains('تقویم رسمی') || src.contains('iran_') || src == 'iran_official_calendar') {
           continue;
         }
 
         final jDateStr = (h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-').toString();
         mapped.add({
           'id': h['id'] ?? 0,
-          'title': h['title'] ?? 'تعطیلی ثبت شده',
+          'title': title.isNotEmpty ? title : 'تعطیلی اختصاصی',
           'jalaliDate': jDateStr,
           'isOfficial': false,
           'isBookingAllowed': h['is_booking_allowed'] ?? true,

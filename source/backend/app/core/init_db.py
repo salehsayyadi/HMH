@@ -139,5 +139,7 @@ async def init_database_data(db: AsyncSession):
         await db.commit()
         logger.info("Standard test user (test / test) created successfully.")
 
-    # 7. Seed Holidays
-    await seed_default_holidays_if_empty(db, start_year=1405, end_year=1407)
+    # 7. Purge legacy automatic/duplicate holidays so MySQL database only retains manual admin entries
+    from sqlalchemy import delete
+    await db.execute(delete(Holiday).where(Holiday.is_manual == False))
+    await db.commit()

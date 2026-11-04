@@ -151,7 +151,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       }
     }
     // Asynchronously sync and cache current month holidays directly from taghvim.com on client PC
-    TaghvimHolidayService.syncMonthFromTaghvim(_jalaliYear, _jalaliMonth);
+    await TaghvimHolidayService.syncMonthFromTaghvim(_jalaliYear, _jalaliMonth);
 
     final gTarget = sampleDay.toDateTime();
     final targetDateStr = '${gTarget.year}-${gTarget.month.toString().padLeft(2, '0')}-${gTarget.day.toString().padLeft(2, '0')}';
@@ -216,7 +216,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
               return s;
             }
             // Automatically unblock any old erroneous holiday blocks originating from old database seeds
-            final isBlockedByOldHoliday = s.status == 'blocked' && (s.blockReason?.contains('تعطیل') ?? false);
+            final blockReasonStr = s.blockReason ?? '';
+            final isBlockedByOldHoliday = s.status == 'blocked' && (
+              blockReasonStr.contains('تعطیل') ||
+              blockReasonStr.contains('مبعث') ||
+              blockReasonStr.contains('ولادت') ||
+              blockReasonStr.contains('نوروز') ||
+              blockReasonStr.contains('رسمی')
+            );
             if (effectiveIsHoliday || isBlockedByOldHoliday) {
               return s.copyWith(
                 status: 'available', // Always bookable!
