@@ -31,7 +31,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
   ];
 
-  static const List<int> _availableYears = [1403, 1404, 1405, 1406, 1407];
+  List<int> get _availableYears {
+    final curYear = Jalali.now().year;
+    // Current active year and up to 10 years into the future (e.g. 1405 through 1415)
+    return List.generate(11, (i) => curYear + i);
+  }
 
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
   String get _monthName => _currentMonthTitle;

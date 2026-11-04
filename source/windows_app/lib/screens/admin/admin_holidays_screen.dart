@@ -33,16 +33,25 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
     setState(() => _isLoading = true);
     try {
       final rawHolidays = await ApiService.getHolidays();
-      final mapped = rawHolidays.map<Map<String, dynamic>>((h) {
-        return {
+      final mapped = <Map<String, dynamic>>[];
+
+      for (final h in rawHolidays) {
+        final jDateStr = (h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-').toString();
+        // Omit past years (1403, 1404) per user requirement
+        if (jDateStr.contains('1403') || jDateStr.contains('1404') ||
+            jDateStr.contains('۱۴۰۳') || jDateStr.contains('۱۴۰۴')) {
+          continue;
+        }
+
+        mapped.add({
           'id': h['id'] ?? 0,
-          'title': h['title'] ?? 'تعطیل رسمی',
-          'jalaliDate': h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-',
+          'title': h['title'] ?? 'مناسبت تقویمی',
+          'jalaliDate': jDateStr,
           'isOfficial': h['is_official'] ?? true,
-          'isBookingAllowed': h['is_booking_allowed'] ?? false,
-          'source': h['description'] ?? (h['is_official'] == true ? 'تقویم رسمی کشور' : 'ثبت مدیریت'),
-        };
-      }).toList();
+          'isBookingAllowed': h['is_booking_allowed'] ?? true, // Bookable by default per user request
+          'source': h['description'] ?? (h['is_official'] == true ? 'تقویم رسمی سال جاری' : 'ثبت مدیریت'),
+        });
+      }
 
       if (mounted) {
         setState(() {
@@ -65,7 +74,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
     int selectedYear = now.year;
     int selectedMonth = now.month;
     int selectedDay = now.day;
-    bool allowBooking = false;
+    bool allowBooking = true; // Bookable by default per user request
     bool isSaving = false;
 
     showDialog(
@@ -364,6 +373,26 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                   ],
                 ),
                 const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.veryLightGreen,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.school_outlined, size: 16, color: AppColors.primaryGreen),
+                      SizedBox(width: 8),
+                      Text(
+                        'سال تحصیلی ۱۴۰۵ - ۱۴۰۶',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: _showAddDialog,
                   icon: const Icon(Icons.add_rounded, size: 20),

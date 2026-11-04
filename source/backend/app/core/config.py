@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "HMH"
+    PROJECT_NAME: str = "IMH"
     APP_ENV: str = "production"
     API_VERSION: str = "v1"
     TIMEZONE: str = "Asia/Tehran"

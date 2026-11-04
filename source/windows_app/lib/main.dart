@@ -39,16 +39,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   maximizeAppWindow();
   await ApiService.init();
-  runApp(const HMHApp());
+  runApp(const IMHApp());
 }
 
-class HMHApp extends StatelessWidget {
-  const HMHApp({super.key});
+class IMHApp extends StatelessWidget {
+  const IMHApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'سامانه رزرو آمفی‌تئاتر مدارس امام حسین (ع)',
+      title: 'سامانه رزرو آمفی‌تئاتر مدارس امام حسین (ع) - IMH',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

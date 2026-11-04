@@ -59,7 +59,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path "app/Windows/Portable" -Force
           Copy-Item -Path "source/windows_app/build/windows/x64/runner/Release/*" -Destination "app/Windows/Portable/" -Recurse -Force
-          Compress-Archive -Path "app/Windows/Portable/*" -DestinationPath "HMH-Portable-x64.zip" -Force
+          Compress-Archive -Path "app/Windows/Portable/*" -DestinationPath "IMH-Portable-x64.zip" -Force
+          Copy-Item -Path "IMH-Portable-x64.zip" -Destination "HMH-Portable-x64.zip" -Force
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -69,32 +70,42 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path "app/Windows/Setup" -Force
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" source/deployment/scripts/HMH-Setup.iss
+          if (Test-Path app/Windows/Setup/IMH-Setup-x64.exe) {
+            Copy-Item -Path app/Windows/Setup/IMH-Setup-x64.exe -Destination app/Windows/Setup/HMH-Setup-x64.exe -Force
+          }
 
       - name: Prepare Server & Web ZIPs
         shell: pwsh
         run: |
-          Compress-Archive -Path "app/Admin-Web/*" -DestinationPath "HMH-Admin-Web.zip" -Force
-          Compress-Archive -Path "app/Server-Deployment/*" -DestinationPath "HMH-Server-Deployment.zip" -Force
+          Compress-Archive -Path "app/Admin-Web/*" -DestinationPath "IMH-Admin-Web.zip" -Force
+          Compress-Archive -Path "app/Server-Deployment/*" -DestinationPath "IMH-Server-Deployment.zip" -Force
+          Copy-Item "IMH-Admin-Web.zip" "HMH-Admin-Web.zip" -Force
+          Copy-Item "IMH-Server-Deployment.zip" "HMH-Server-Deployment.zip" -Force
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "HMH — Imam Hossein Schools Reservation System ${{ github.ref_name }}"
+          name: "IMH — Imam Hossein Schools Reservation System ${{ github.ref_name }}"
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: |
+            app/Windows/Setup/IMH-Setup-x64.exe
             app/Windows/Setup/HMH-Setup-x64.exe
+            IMH-Portable-x64.zip
             HMH-Portable-x64.zip
-            HMH-Admin-Web.zip
-            HMH-Server-Deployment.zip
+            IMH-Admin-Web.zip
+            IMH-Server-Deployment.zip
           body: |
-            ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد — نسخه ${{ github.ref_name }}
+            ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد (IMH) — نسخه ${{ github.ref_name }}
 
-            ### محتویات بسته انتشار (Phase 1):
-            1. **HMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
-            2. **HMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم
-            3. **HMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)
-            4. **HMH-Server-Deployment.zip**: پکیج کامل استقرار سرور لینوکس (Docker Compose + MySQL 9.7 LTS + Nginx)
+            ### محتویات بسته انتشار:
+            1. **IMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
+            2. **IMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم
+            3. **IMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)
+            4. **IMH-Server-Deployment.zip**: پکیج کامل استقرار سرور لینوکس (Docker Compose + MySQL 9.7 LTS + Nginx)
+
+            ---
+            **طراحی و توسعه‌یافته با افتخار توسط دانش‌آموز: محمد صالح صیادی (پایه یازدهم فنی) — سال تحصیلی ۱۴۰۵-۱۴۰۶**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

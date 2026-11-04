@@ -337,6 +337,9 @@ class _MainScreenState extends State<MainScreen> {
                     ],
 
                     Expanded(child: _buildCurrentScreen(isSuperAdmin)),
+
+                    // Universal prestigious student creator footer
+                    _buildAppFooter(),
                   ],
                 ),
               ),
@@ -471,5 +474,105 @@ class _MainScreenState extends State<MainScreen> {
           return CalendarScreen(currentUser: _currentUser);
       }
     }
+  }
+
+  Widget _buildAppFooter() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 780;
+          final devCredit = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: AppColors.veryLightGreen,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.code_rounded, size: 16, color: AppColors.primaryGreen),
+              ),
+              const SizedBox(width: 8),
+              const Flexible(
+                child: Text(
+                  'طراحی و توسعه‌یافته توسط دانش‌آموز: محمد صالح صیادی (پایه یازدهم فنی)',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          );
+
+          final orgCredit = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.pastelGreen.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'سال تحصیلی ۱۴۰۵ - ۱۴۰۶',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'سامانه جامع رزرواسیون سالن آمفی‌تئاتر مرکزی IMH',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.secondaryText,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          );
+
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                devCredit,
+                const SizedBox(height: 6),
+                orgCredit,
+              ],
+            );
+          }
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(child: devCredit),
+              const SizedBox(width: 12),
+              orgCredit,
+            ],
+          );
+        },
+      ),
+    );
   }
 }

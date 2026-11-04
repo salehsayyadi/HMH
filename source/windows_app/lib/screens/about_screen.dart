@@ -89,13 +89,59 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'نسخه تولیدی سامانه: ۱.۰.۱۶',
+                      'نسخه تولیدی سامانه: ۱.۰.۱۷ (IMH)',
                       style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // Developer & Student Recognition Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.veryLightGreen,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.school_rounded, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'طراح و توسعه‌دهنده سامانه نرم‌افزاری:',
+                            style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'محمد صالح صیادی — دانش‌آموز پایه یازدهم فنی هنرستان',
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'موسسه خیریه فرهنگی و آموزشی حضرت امام حسین (ع) یزد | سال تحصیلی ۱۴۰۵ - ۱۴۰۶',
+                            style: TextStyle(fontSize: 11.5, color: AppColors.secondaryGreen),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
 
               // Server Status Section per Part 19
               // "وضعیت اتصال به سرور تنها در این صفحه نمایش داده شود"

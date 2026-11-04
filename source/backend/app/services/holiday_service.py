@@ -119,12 +119,13 @@ def get_official_holidays_for_year(year: int) -> List[Tuple[int, int, str]]:
 
 async def seed_default_holidays_if_empty(
     db: AsyncSession,
-    start_year: int = 1403,
-    end_year: int = 1407,
+    start_year: int = 1405,
+    end_year: int = 1415,
     year: Optional[int] = None
 ):
     """
-    Seeds standard national holidays for years 1403 through 1407.
+    Seeds standard national holidays for years 1405 through 1415 (current and upcoming 10 years).
+    Holidays are bookable by default so schools can hold special events and celebrations.
     """
     if year is not None:
         start_year = year
@@ -148,7 +149,7 @@ async def seed_default_holidays_if_empty(
                         title=f"{title}",
                         is_official=True,
                         is_manual=False,
-                        is_booking_allowed=False,
+                        is_booking_allowed=True,
                         source="iran_official_calendar"
                     )
                 )
@@ -160,7 +161,12 @@ async def seed_default_holidays_if_empty(
         await db.commit()
 
 async def get_all_holidays(db: AsyncSession) -> List[HolidayResponse]:
-    res = await db.execute(select(Holiday).order_by(Holiday.holiday_date.asc()))
+    # Only return holidays from the current active academic era (1405 onwards: >= 2026-03-21)
+    res = await db.execute(
+        select(Holiday)
+        .where(Holiday.holiday_date >= date(2026, 3, 20))
+        .order_by(Holiday.holiday_date.asc())
+    )
     records = res.scalars().all()
     return [
         HolidayResponse(
@@ -170,7 +176,7 @@ async def get_all_holidays(db: AsyncSession) -> List[HolidayResponse]:
             title=h.title,
             is_official=h.is_official,
             is_manual=h.is_manual,
-            is_booking_allowed=getattr(h, 'is_booking_allowed', False),
+            is_booking_allowed=getattr(h, 'is_booking_allowed', True),
             source=h.source,
             created_at=h.created_at
         )
