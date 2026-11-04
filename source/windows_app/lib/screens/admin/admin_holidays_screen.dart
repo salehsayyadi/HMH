@@ -36,74 +36,22 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
       final mapped = <Map<String, dynamic>>[];
 
       for (final h in rawHolidays) {
-        final jDateStr = (h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-').toString();
-        // Omit past years (1403, 1404) per user requirement
-        if (jDateStr.contains('1403') || jDateStr.contains('1404') ||
-            jDateStr.contains('۱۴۰۳') || jDateStr.contains('۱۴۰۴')) {
+        // As requested by user: Official taghvim holidays are handled dynamically in the calendar
+        // and must NOT be shown in this admin management table. Only show custom holidays added by management!
+        final isOfficial = (h['is_official'] == true) && (h['is_manual'] != true);
+        if (isOfficial) {
           continue;
         }
 
+        final jDateStr = (h['jalali_date'] ?? h['holiday_date_jalali'] ?? h['holiday_date'] ?? '-').toString();
         mapped.add({
           'id': h['id'] ?? 0,
-          'title': h['title'] ?? 'مناسبت تقویمی',
+          'title': h['title'] ?? 'تعطیلی ثبت شده',
           'jalaliDate': jDateStr,
-          'isOfficial': h['is_official'] ?? true,
-          'isBookingAllowed': h['is_booking_allowed'] ?? true, // Bookable by default per user request
-          'source': h['description'] ?? (h['is_official'] == true ? 'تقویم رسمی سال جاری' : 'ثبت مدیریت'),
+          'isOfficial': false,
+          'isBookingAllowed': h['is_booking_allowed'] ?? true,
+          'source': h['description'] ?? 'ثبت اختصاصی مدیریت',
         });
-      }
-
-      if (mapped.isEmpty) {
-        // Fallback to official 27 holidays from taghvim.com for 1405..1407
-        final curYear = Jalali.now().year;
-        const monthNames = [
-          'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
-          'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
-        ];
-        const taghvimHols = [
-          [1, 1, 'جشن نوروز / سال نو'],
-          [1, 2, 'عید نوروز'],
-          [1, 3, 'عید نوروز'],
-          [1, 4, 'عید نوروز'],
-          [1, 12, 'روز جمهوری اسلامی ایران'],
-          [1, 13, 'روز طبیعت (سیزده به در)'],
-          [1, 14, 'شهادت امام جعفر صادق (ع)'],
-          [2, 27, 'عید سعید قربان'],
-          [3, 4, 'عید سعید غدیر خم'],
-          [3, 14, 'رحلت حضرت امام خمینی (ره)'],
-          [3, 15, 'قیام ۱۵ خرداد'],
-          [3, 25, 'تاسوعای حسینی'],
-          [3, 26, 'عاشورای حسینی'],
-          [5, 13, 'اربعین حسینی'],
-          [5, 21, 'رحلت رسول اکرم (ص) و شهادت امام حسن مجتبی (ع)'],
-          [5, 22, 'شهادت امام رضا (ع)'],
-          [5, 30, 'شهادت امام حسن عسکری (ع)'],
-          [6, 8, 'میلاد رسول اکرم (ص) و امام جعفر صادق (ع)'],
-          [8, 22, 'شهادت حضرت فاطمه زهرا (س)'],
-          [10, 2, 'ولادت امام علی (ع) و روز پدر'],
-          [10, 16, 'مبعث رسول اکرم (ص)'],
-          [11, 4, 'ولادت حضرت قائم (عج) و جشن نیمه شعبان'],
-          [11, 22, 'پیروزی انقلاب اسلامی ایران'],
-          [12, 9, 'شهادت حضرت علی (ع)'],
-          [12, 19, 'عید سعید فطر'],
-          [12, 20, 'تعطیلی عید سعید فطر'],
-          [12, 29, 'روز ملی شدن صنعت نفت ایران'],
-        ];
-        for (int y = curYear; y <= curYear + 2; y++) {
-          for (final item in taghvimHols) {
-            final m = item[0] as int;
-            final d = item[1] as int;
-            final title = item[2] as String;
-            mapped.add({
-              'id': y * 1000 + m * 100 + d,
-              'title': title,
-              'jalaliDate': '$d ${monthNames[m - 1]} $y',
-              'isOfficial': true,
-              'isBookingAllowed': true,
-              'source': 'تقویم رسمی taghvim.com',
-            });
-          }
-        }
       }
 
       if (mounted) {
@@ -112,12 +60,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
         });
       }
     } catch (_) {
-      // In offline mode, keep taghvim official holidays
-      if (mapped.isNotEmpty && mounted) {
-        setState(() {
-          _holidays = mapped;
-        });
-      }
+      // Keep empty if none
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -427,7 +370,7 @@ class _AdminHolidaysScreenState extends State<AdminHolidaysScreen> {
                   children: [
                     Text('مدیریت تقویم تعطیلات و مناسبت‌ها', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen)),
                     SizedBox(height: 3),
-                    Text('مشاهده و ثبت تعطیلات رسمی و مناسبت‌های اختصاصی موسسه امام حسین (ع)', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                    Text('ثبت و مدیریت تعطیلات و مناسبت‌های اختصاصی موسسه امام حسین (ع) (تعطیلات رسمی کشور مستقیماً در تقویم نمایش داده می‌شوند)', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                   ],
                 ),
                 const Spacer(),

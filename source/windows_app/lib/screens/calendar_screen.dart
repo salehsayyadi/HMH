@@ -4,6 +4,7 @@ import '../core/constants/colors.dart';
 import '../core/services/api_service.dart';
 import '../models/user.dart';
 import '../models/calendar_day.dart';
+import '../core/services/taghvim_holiday_service.dart';
 import 'booking_modal.dart';
 import 'reservation_details_modal.dart';
 
@@ -31,55 +32,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
   ];
 
-  /// 27 Exact Official Iranian Holidays extracted from taghvim.com
-  static const Map<int, Map<int, String>> _taghvimHolidays = {
-    1: {
-      1: 'جشن نوروز / سال نو',
-      2: 'عید نوروز',
-      3: 'عید نوروز',
-      4: 'عید نوروز',
-      12: 'روز جمهوری اسلامی ایران',
-      13: 'روز طبیعت (سیزده به در)',
-      14: 'شهادت امام جعفر صادق (ع)',
-    },
-    2: {
-      27: 'عید سعید قربان',
-    },
-    3: {
-      4: 'عید سعید غدیر خم',
-      14: 'رحلت حضرت امام خمینی (ره)',
-      15: 'قیام ۱۵ خرداد',
-      25: 'تاسوعای حسینی',
-      26: 'عاشورای حسینی',
-    },
-    5: {
-      13: 'اربعین حسینی',
-      21: 'رحلت رسول اکرم (ص) و شهادت امام حسن مجتبی (ع)',
-      22: 'شهادت امام رضا (ع)',
-      30: 'شهادت امام حسن عسکری (ع)',
-    },
-    6: {
-      8: 'میلاد رسول اکرم (ص) و امام جعفر صادق (ع)',
-    },
-    8: {
-      22: 'شهادت حضرت فاطمه زهرا (س)',
-    },
-    10: {
-      2: 'ولادت امام علی (ع) و روز پدر',
-      16: 'مبعث رسول اکرم (ص)',
-    },
-    11: {
-      4: 'ولادت حضرت قائم (عج) و جشن نیمه شعبان',
-      22: 'پیروزی انقلاب اسلامی ایران',
-    },
-    12: {
-      9: 'شهادت حضرت علی (ع)',
-      19: 'عید سعید فطر',
-      20: 'تعطیلی عید سعید فطر',
-      29: 'روز ملی شدن صنعت نفت ایران',
-    },
-  };
-
   List<int> get _availableYears {
     final curYear = Jalali.now().year;
     // Rolling 3-year selector starting from current year (e.g. 1405..1407, when 1406 => 1406..1408)
@@ -103,6 +55,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _jalaliYear = now.year;
     _jalaliMonth = now.month;
     _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
+    TaghvimHolidayService.initialize();
     _loadCalendar();
   }
 
@@ -191,6 +144,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         break;
       }
     }
+    // Asynchronously sync and cache current month holidays directly from taghvim.com on client PC
+    TaghvimHolidayService.syncMonthFromTaghvim(_jalaliYear, _jalaliMonth);
+
     final gTarget = sampleDay.toDateTime();
     final targetDateStr = '${gTarget.year}-${gTarget.month.toString().padLeft(2, '0')}-${gTarget.day.toString().padLeft(2, '0')}';
 
@@ -243,7 +199,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         final isToday = (currentJDay == Jalali.now());
         final isFri = (i == 6);
-        final taghvimHoliday = _taghvimHolidays[currentJDay.month]?[currentJDay.day];
+        final taghvimHoliday = TaghvimHolidayService.getHolidayTitle(currentJDay.year, currentJDay.month, currentJDay.day);
         final effectiveIsHoliday = (matchedDay?.isHoliday ?? false) || (taghvimHoliday != null) || isFri;
         final effectiveHolidayTitle = matchedDay?.holidayTitle ?? taghvimHoliday ?? (isFri ? 'تعطیل هفتگی جمعه' : null);
 
@@ -346,7 +302,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         final isToday = (currentJDay == Jalali.now());
         final isFri = (i == 6);
-        final taghvimHoliday = _taghvimHolidays[currentJDay.month]?[currentJDay.day];
+        final taghvimHoliday = TaghvimHolidayService.getHolidayTitle(currentJDay.year, currentJDay.month, currentJDay.day);
         final effectiveIsHoliday = (taghvimHoliday != null) || isFri;
         final effectiveHolidayTitle = taghvimHoliday ?? (isFri ? 'تعطیل هفتگی جمعه' : null);
 

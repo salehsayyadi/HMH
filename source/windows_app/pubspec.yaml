@@ -1,7 +1,7 @@
 name: hmh_amphitheater_reservation
 description: Imam Hossein Schools Central Amphitheater Reservation System - IMH Native Windows Desktop Application
 publish_to: 'none'
-version: 1.0.19+20
+version: 1.0.20+21
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
