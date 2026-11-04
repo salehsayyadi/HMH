@@ -56,7 +56,10 @@ class _MobileAdminMainScreenState extends State<MobileAdminMainScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      MobileAdminDashboardScreen(onLogout: _handleLogout),
+      MobileAdminDashboardScreen(
+        currentUser: widget.currentUser,
+        onLogout: _handleLogout,
+      ),
       MobileAdminMenuScreen(onLogout: _handleLogout, onSelectTab: _onSelectTab),
       MobileAdminCalendarScreen(onLogout: _handleLogout),
     ];

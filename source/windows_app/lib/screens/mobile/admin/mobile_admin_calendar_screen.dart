@@ -278,12 +278,12 @@ class _MobileAdminCalendarScreenState extends State<MobileAdminCalendarScreen> {
                                     setSheetState(() => isSubmitting = true);
                                     try {
                                       final gStr = _formatGregorian(day);
-                                      await ApiService.createReservation({
-                                        'school_id': selectedSchoolId,
-                                        'time_slot_id': slot['id'],
-                                        'reservation_date': gStr,
-                                        'description': title,
-                                      });
+                                      await ApiService.createReservation(
+                                        schoolId: selectedSchoolId,
+                                        timeSlotId: slot['id'],
+                                        date: gStr,
+                                        description: title,
+                                      );
                                       if (ctx.mounted) Navigator.pop(ctx);
                                       _loadAllData();
                                       if (mounted) {

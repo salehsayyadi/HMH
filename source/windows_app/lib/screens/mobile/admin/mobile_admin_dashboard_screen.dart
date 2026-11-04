@@ -6,12 +6,12 @@ import '../common/mobile_footer.dart';
 import '../common/mobile_top_bar.dart';
 
 class MobileAdminDashboardScreen extends StatefulWidget {
-  final UserModel currentUser;
+  final UserModel? currentUser;
   final VoidCallback onLogout;
 
   const MobileAdminDashboardScreen({
     super.key,
-    required this.currentUser,
+    this.currentUser,
     required this.onLogout,
   });
 
@@ -36,8 +36,8 @@ class _MobileAdminDashboardScreenState extends State<MobileAdminDashboardScreen>
       final res = await ApiService.getDashboardStats();
       if (!mounted) return;
       setState(() {
-        _stats = res;
-        _schoolUsage = List<Map<String, dynamic>>.from(res['school_usage'] ?? []);
+        _stats = res ?? {};
+        _schoolUsage = List<Map<String, dynamic>>.from(res?['school_usage'] ?? []);
         _isLoading = false;
       });
     } catch (_) {

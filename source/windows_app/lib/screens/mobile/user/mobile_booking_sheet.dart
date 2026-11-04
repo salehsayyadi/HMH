@@ -57,11 +57,11 @@ class _MobileBookingSheetState extends State<MobileBookingSheet> {
     });
 
     try {
-      await ApiService.createReservation({
-        'reservation_date': widget.cell.date,
-        'time_slot_id': widget.cell.timeSlotId,
-        'description': desc,
-      });
+      await ApiService.createReservation(
+        date: widget.cell.date,
+        timeSlotId: widget.cell.timeSlotId,
+        description: desc,
+      );
 
       if (!mounted) return;
       Navigator.pop(context);

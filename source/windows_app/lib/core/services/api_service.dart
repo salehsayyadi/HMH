@@ -187,6 +187,8 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> testConnectionUrl(String url) => testServerConnection(url);
+
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('access_token');
@@ -504,13 +506,14 @@ class ApiService {
     required String reservationDate,
     String? title,
     String? description,
+    int? schoolId,
   }) async {
     if (isOfflineEmergencyMode) {
       return {
         'id': 999,
         'reservation_date': reservationDate,
         'time_slot_id': timeSlotId,
-        'school_id': 2,
+        'school_id': schoolId ?? 2,
         'school_name': 'مدرسه پسرانه دوره دوم',
         'user_id': 99,
         'user_full_name': 'کاربر تست',
@@ -543,6 +546,7 @@ class ApiService {
         'reservation_date': reservationDate,
         'title': title,
         'description': description,
+        if (schoolId != null) 'school_id': schoolId,
       }),
     ).timeout(const Duration(seconds: 20));
 
@@ -623,39 +627,43 @@ class ApiService {
     throw Exception(data['detail'] ?? 'خطا در دریافت جزئیات رزرو');
   }
 
-  static Future<Map<String, dynamic>> createReservation([
-    dynamic dataOrDate,
+  static Future<Map<String, dynamic>> createReservation({
+    dynamic data,
+    String? date,
     int? timeSlotId,
     String? title,
     String? description,
-  ]) {
-    if (dataOrDate is Map<String, dynamic>) {
-      final date = dataOrDate['reservation_date'] ?? dataOrDate['date'] ?? '';
-      final slotId = dataOrDate['time_slot_id'] ?? dataOrDate['slot_id'] ?? 1;
-      final t = dataOrDate['title'] as String?;
-      final desc = dataOrDate['description'] as String?;
-      final schId = dataOrDate['school_id'] as int?;
+    int? schoolId,
+  }) {
+    if (data is Map<String, dynamic>) {
+      final d = data['reservation_date'] ?? data['date'] ?? '';
+      final slotId = data['time_slot_id'] ?? data['slot_id'] ?? 1;
+      final t = data['title'] as String?;
+      final desc = data['description'] as String?;
+      final schId = data['school_id'] as int?;
       return reserveSlot(
         timeSlotId: slotId,
-        reservationDate: date,
+        reservationDate: d,
         title: t,
         description: desc,
         schoolId: schId,
       );
-    } else {
-      return reserveSlot(
-        timeSlotId: timeSlotId ?? 1,
-        reservationDate: dataOrDate?.toString() ?? '',
-        title: title,
-        description: description,
-      );
     }
+    return reserveSlot(
+      timeSlotId: timeSlotId ?? 1,
+      reservationDate: date ?? '',
+      title: title,
+      description: description,
+      schoolId: schoolId,
+    );
   }
 
   static Future<Map<String, dynamic>> changePassword({
-    required String currentPassword,
-    required String newPassword,
+    String? currentPassword,
+    String? newPassword,
   }) async {
+    final curPass = currentPassword ?? '';
+    final newPass = newPassword ?? '';
     if (isOfflineEmergencyMode) {
       throw Exception('تغییر رمز در حالت آفلاین مقدور نیست.');
     }
@@ -668,8 +676,8 @@ class ApiService {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
+        'current_password': curPass,
+        'new_password': newPass,
       }),
     );
 

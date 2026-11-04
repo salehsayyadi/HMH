@@ -54,48 +54,23 @@ async def seed_default_holidays_if_empty(
     year: Optional[int] = None
 ):
     """
-    Seeds standard national holidays for 3 active years (1405 through 1407).
-    Holidays are bookable by default so schools can hold special events and celebrations.
+    Official calendar holidays are dynamically extracted and rendered on client devices
+    via TaghvimHolidayService, preserving server storage and avoiding duplicate entries.
     """
-    if year is not None:
-        start_year = year
-        end_year = year
-    # Fetch all existing holiday dates
-    existing_res = await db.execute(select(Holiday.holiday_date))
-    seen_dates = set(existing_res.scalars().all())
-
-    holidays_to_add = []
-    for year in range(start_year, end_year + 1):
-        year_holidays = get_official_holidays_for_year(year)
-        for month, day, title in year_holidays:
-            try:
-                g_date = jalali_to_gregorian(year, month, day)
-                if g_date in seen_dates:
-                    continue
-                seen_dates.add(g_date)
-                holidays_to_add.append(
-                    Holiday(
-                        holiday_date=g_date,
-                        title=f"{title}",
-                        is_official=True,
-                        is_manual=False,
-                        is_booking_allowed=True,
-                        source="iran_official_calendar"
-                    )
-                )
-            except Exception:
-                continue
-
-    if holidays_to_add:
-        db.add_all(holidays_to_add)
-        await db.commit()
+    return
 
 async def get_all_holidays(db: AsyncSession) -> List[HolidayResponse]:
-    # Only return manual holidays created by school admin.
-    # Official taghvim holidays are managed dynamically on the client calendar.
+    # Strictly return manual custom holidays added by school admin.
+    # Official calendar holidays are handled dynamically on the client calendar.
     res = await db.execute(
         select(Holiday)
-        .where(Holiday.is_manual == True)
+        .where(
+            and_(
+                Holiday.is_manual == True,
+                Holiday.is_official == False,
+                Holiday.source != "iran_official_calendar"
+            )
+        )
         .order_by(Holiday.holiday_date.asc())
     )
     records = res.scalars().all()

@@ -202,8 +202,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
       y--;
     }
     final available = _availableYears;
-    if (y < available.first) y = available.first;
-    if (y > available.last) y = available.last;
+    if (y < available.first || y > available.last) return; // Stay strictly within 3-year rolling window
 
     setState(() {
       _jalaliYear = y;

@@ -54,7 +54,10 @@ class _MobileUserProfileScreenState extends State<MobileUserProfileScreen> {
     });
 
     try {
-      await ApiService.changePassword(oldPass, newPass);
+      await ApiService.changePassword(
+        currentPassword: oldPass,
+        newPassword: newPass,
+      );
       if (!mounted) return;
       setState(() {
         _isChangingPassword = false;

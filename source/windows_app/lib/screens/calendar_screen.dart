@@ -87,23 +87,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _changeMonth(int delta) {
+    final available = _availableYears;
+    int nextMonth = _jalaliMonth + delta;
+    int nextYear = _jalaliYear;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    } else if (nextMonth < 1) {
+      nextMonth = 12;
+      nextYear--;
+    }
+    if (nextYear < available.first || nextYear > available.last) {
+      return; // Strictly stay within rolling 3-year window
+    }
     setState(() {
-      _jalaliMonth += delta;
-      if (_jalaliMonth > 12) {
-        _jalaliMonth = 1;
-        _jalaliYear++;
-      } else if (_jalaliMonth < 1) {
-        _jalaliMonth = 12;
-        _jalaliYear--;
-      }
-      final available = _availableYears;
-      if (_jalaliYear < available.first) {
-        _jalaliYear = available.first;
-        _jalaliMonth = 1;
-      } else if (_jalaliYear > available.last) {
-        _jalaliYear = available.last;
-        _jalaliMonth = 12;
-      }
+      _jalaliYear = nextYear;
+      _jalaliMonth = nextMonth;
       _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth).clamp(0, _totalWeeksInMonth - 1);
     });
     _loadCalendar();
