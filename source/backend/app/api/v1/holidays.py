@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_admin
 from app.models import User
 from app.schemas import HolidayCreate, HolidayResponse
-from app.services.holiday_service import get_all_holidays, add_manual_holiday, delete_holiday
+from app.services.holiday_service import get_all_holidays, add_manual_holiday, delete_holiday, resync_taghvim_holidays
 
 router = APIRouter(prefix="/holidays", tags=["Holidays"])
 
@@ -30,3 +30,10 @@ async def remove_holiday(
     db: AsyncSession = Depends(get_db)
 ):
     await delete_holiday(db, holiday_id)
+
+@router.post("/sync-taghvim")
+async def sync_taghvim(
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    return await resync_taghvim_holidays(db)

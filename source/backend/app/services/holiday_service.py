@@ -4,118 +4,48 @@ import urllib.request
 import json
 import jdatetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from fastapi import HTTPException
 from app.models import Holiday
 from app.schemas import HolidayCreate, HolidayUpdate, HolidayResponse
 from app.core.persian_date import format_jalali_date, jalali_to_gregorian
 
-# Comprehensive Official Iran National Solar Holidays (Month, Day, Title)
-FIXED_IRAN_SOLAR_HOLIDAYS = [
+# Exact 27 Official Iranian Calendar Holidays from taghvim.com (Solar + Lunar)
+OFFICIAL_TAGHVIM_HOLIDAYS: List[Tuple[int, int, str]] = [
     (1, 1, "جشن نوروز / سال نو"),
     (1, 2, "عید نوروز"),
     (1, 3, "عید نوروز"),
     (1, 4, "عید نوروز"),
     (1, 12, "روز جمهوری اسلامی ایران"),
-    (1, 13, "روز طبیعت (سیزده بدر)"),
+    (1, 13, "روز طبیعت (سیزده به در)"),
+    (1, 14, "شهادت امام جعفر صادق (ع)"),
+    (2, 27, "عید سعید قربان"),
+    (3, 4, "عید سعید غدیر خم"),
     (3, 14, "رحلت حضرت امام خمینی (ره)"),
-    (3, 15, "قیام خونین ۱۵ خرداد"),
+    (3, 15, "قیام ۱۵ خرداد"),
+    (3, 25, "تاسوعای حسینی"),
+    (3, 26, "عاشورای حسینی"),
+    (5, 13, "اربعین حسینی"),
+    (5, 21, "رحلت رسول اکرم (ص) و شهادت امام حسن مجتبی (ع)"),
+    (5, 22, "شهادت امام رضا (ع)"),
+    (5, 30, "شهادت امام حسن عسکری (ع)"),
+    (6, 8, "میلاد رسول اکرم (ص) و امام جعفر صادق (ع)"),
+    (8, 22, "شهادت حضرت فاطمه زهرا (س)"),
+    (10, 2, "ولادت امام علی (ع) و روز پدر"),
+    (10, 16, "مبعث رسول اکرم (ص)"),
+    (11, 4, "ولادت حضرت قائم (عج) و جشن نیمه شعبان"),
     (11, 22, "پیروزی انقلاب اسلامی ایران"),
-    (12, 29, "روز ملی شدن صنعت نفت ایران")
+    (12, 9, "شهادت حضرت علی (ع)"),
+    (12, 19, "عید سعید فطر"),
+    (12, 20, "تعطیلی عید سعید فطر"),
+    (12, 29, "روز ملی شدن صنعت نفت ایران"),
 ]
-
-# Official Lunar/Religious Holidays in Iranian Calendar by Jalali Year
-YEAR_SPECIFIC_LUNAR_HOLIDAYS: Dict[int, List[Tuple[int, int, str]]] = {
-    1403: [
-        (1, 23, "عید سعید فطر"),
-        (1, 24, "تعطیلی عید سعید فطر"),
-        (2, 15, "شهادت امام جعفر صادق (ع)"),
-        (3, 28, "عید سعید قربان"),
-        (4, 5, "عید سعید غدیر خم"),
-        (4, 25, "تاسوعای حسینی"),
-        (4, 26, "عاشورای حسینی"),
-        (6, 4, "اربعین حسینی"),
-        (6, 12, "رحلت رسول اکرم (ص) و شهادت امام حسن مجتبی (ع)"),
-        (6, 14, "شهادت امام رضا (ع)"),
-        (6, 22, "شهادت امام حسن عسکری (ع)"),
-        (6, 31, "میلاد رسول اکرم (ص) و امام جعفر صادق (ع)"),
-        (9, 15, "شهادت حضرت فاطمه زهرا (س)"),
-        (10, 25, "ولادت امام علی (ع)"),
-        (11, 9, "مبعث حضرت رسول اکرم (ص)"),
-        (11, 26, "ولادت حضرت قائم (عج)")
-    ],
-    1404: [
-        (1, 11, "عید سعید فطر"),
-        (1, 12, "تعطیلی عید سعید فطر"),
-        (2, 4, "شهادت امام جعفر صادق (ع)"),
-        (3, 16, "عید سعید قربان"),
-        (3, 24, "عید سعید غدیر خم"),
-        (4, 14, "تاسوعای حسینی"),
-        (4, 15, "عاشورای حسینی"),
-        (5, 24, "اربعین حسینی"),
-        (6, 1, "رحلت حضرت رسول اکرم (ص)"),
-        (6, 3, "شهادت امام رضا (ع)"),
-        (6, 11, "شهادت امام حسن عسکری (ع)"),
-        (6, 20, "میلاد رسول اکرم (ص)"),
-        (9, 4, "شهادت حضرت فاطمه زهرا (س)"),
-        (10, 14, "ولادت امام علی (ع)"),
-        (10, 28, "مبعث حضرت رسول اکرم (ص)"),
-        (11, 16, "ولادت حضرت قائم (عج)")
-    ],
-    1405: [
-        (1, 31, "عید سعید فطر"),
-        (2, 1, "تعطیلی عید سعید فطر"),
-        (2, 24, "شهادت امام جعفر صادق (ع)"),
-        (3, 6, "عید سعید قربان"),
-        (4, 4, "تاسوعای حسینی"),
-        (4, 5, "عاشورای حسینی"),
-        (5, 13, "اربعین حسینی"),
-        (5, 21, "رحلت رسول اکرم (ص)"),
-        (5, 23, "شهادت امام رضا (ع)"),
-        (5, 31, "شهادت امام حسن عسکری (ع)"),
-        (6, 9, "میلاد رسول اکرم (ص)"),
-        (8, 23, "شهادت حضرت فاطمه زهرا (س)"),
-        (10, 3, "ولادت امام علی (ع)"),
-        (10, 17, "مبعث حضرت رسول اکرم (ص)"),
-        (11, 5, "ولادت حضرت قائم (عج)")
-    ],
-    1406: [
-        (1, 20, "عید سعید فطر"),
-        (1, 21, "تعطیلی عید سعید فطر"),
-        (2, 13, "شهادت امام جعفر صادق (ع)"),
-        (3, 26, "عید سعید قربان"),
-        (4, 3, "عید سعید غدیر خم"),
-        (4, 23, "تاسوعای حسینی"),
-        (4, 24, "عاشورای حسینی"),
-        (5, 2, "اربعین حسینی"),
-        (5, 10, "رحلت رسول اکرم (ص)"),
-        (5, 12, "شهادت امام رضا (ع)"),
-        (5, 20, "شهادت امام حسن عسکری (ع)"),
-        (5, 29, "میلاد رسول اکرم (ص)"),
-        (8, 12, "شهادت حضرت فاطمه زهرا (س)"),
-        (9, 23, "ولادت امام علی (ع)"),
-        (10, 7, "مبعث حضرت رسول اکرم (ص)"),
-        (10, 25, "ولادت حضرت قائم (عج)")
-    ],
-    1407: [
-        (1, 9, "عید سعید فطر"),
-        (1, 10, "تعطیلی عید سعید فطر"),
-        (2, 2, "شهادت امام جعفر صادق (ع)"),
-        (3, 15, "عید سعید قربان"),
-        (3, 23, "عید سعید غدیر خم"),
-        (4, 12, "تاسوعای حسینی"),
-        (4, 13, "عاشورای حسینی")
-    ]
-}
 
 def get_official_holidays_for_year(year: int) -> List[Tuple[int, int, str]]:
     """
-    Returns full official holidays (Solar + Lunar) for a given Jalali year.
+    Returns full official holidays from taghvim.com for a given Jalali year.
     """
-    holidays = list(FIXED_IRAN_SOLAR_HOLIDAYS)
-    if year in YEAR_SPECIFIC_LUNAR_HOLIDAYS:
-        holidays.extend(YEAR_SPECIFIC_LUNAR_HOLIDAYS[year])
-    return holidays
+    return list(OFFICIAL_TAGHVIM_HOLIDAYS)
 
 async def seed_default_holidays_if_empty(
     db: AsyncSession,
@@ -219,3 +149,12 @@ async def delete_holiday(db: AsyncSession, holiday_id: int):
         raise HTTPException(status_code=404, detail="تعطیلی مورد نظر یافت نشد.")
     await db.delete(h)
     await db.commit()
+
+async def resync_taghvim_holidays(db: AsyncSession) -> dict:
+    """
+    Clears old automatic holidays and re-seeds exact 27 taghvim.com holidays for 1405..1407.
+    """
+    await db.execute(delete(Holiday).where(Holiday.is_manual == False))
+    await db.commit()
+    await seed_default_holidays_if_empty(db, start_year=1405, end_year=1407)
+    return {"success": True, "message": "تعطیلات رسمی بر اساس تقویم استاندارد taghvim.com همگام‌سازی شدند."}

@@ -130,6 +130,32 @@ class _BookingModalState extends State<BookingModal> {
               ),
               const SizedBox(height: 20),
 
+              // Holiday Notice Banner
+              if (widget.cell.isHoliday) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.holidayRed,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFF7C3C9)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.celebration_rounded, color: AppColors.holidayRedText, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'مناسبت تقویمی: ${widget.cell.holidayTitle ?? "تعطیل رسمی"} (رزرو سالن برای مراسم و برنامه‌های مدارس مجاز است)',
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.holidayRedText, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Info notice banner
               Container(
                 width: double.infinity,

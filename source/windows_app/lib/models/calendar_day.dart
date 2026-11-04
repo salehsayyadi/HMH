@@ -49,6 +49,40 @@ class CalendarCellModel {
       userFullName: json['user_full_name'],
     );
   }
+
+  CalendarCellModel copyWith({
+    String? date,
+    String? jalaliDate,
+    String? jalaliDayName,
+    int? dayOfWeek,
+    int? timeSlotId,
+    String? timeSlotTitle,
+    String? status,
+    bool? isHoliday,
+    String? holidayTitle,
+    bool? isBlocked,
+    String? blockReason,
+    int? reservationId,
+    String? schoolName,
+    String? userFullName,
+  }) {
+    return CalendarCellModel(
+      date: date ?? this.date,
+      jalaliDate: jalaliDate ?? this.jalaliDate,
+      jalaliDayName: jalaliDayName ?? this.jalaliDayName,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      timeSlotId: timeSlotId ?? this.timeSlotId,
+      timeSlotTitle: timeSlotTitle ?? this.timeSlotTitle,
+      status: status ?? this.status,
+      isHoliday: isHoliday ?? this.isHoliday,
+      holidayTitle: holidayTitle ?? this.holidayTitle,
+      isBlocked: isBlocked ?? this.isBlocked,
+      blockReason: blockReason ?? this.blockReason,
+      reservationId: reservationId ?? this.reservationId,
+      schoolName: schoolName ?? this.schoolName,
+      userFullName: userFullName ?? this.userFullName,
+    );
+  }
 }
 
 class CalendarDayModel {

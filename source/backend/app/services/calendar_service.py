@@ -92,6 +92,11 @@ async def get_calendar_week(
         is_holiday = holiday_obj is not None
         holiday_title = holiday_obj.title if holiday_obj else None
 
+        # Friday is weekly official holiday
+        if d_offset == 6 and not is_holiday:
+            is_holiday = True
+            holiday_title = "تعطیل هفتگی جمعه" 
+
         day_cells: List[CalendarCell] = []
 
         for ts in time_slots:
@@ -127,7 +132,7 @@ async def get_calendar_week(
                 school_name = existing_res.school.name if existing_res.school else None
                 user_full_name = existing_res.user.full_name if existing_res.user else None
             elif is_holiday:
-                if holiday_obj and not getattr(holiday_obj, 'is_booking_allowed', False):
+                if holiday_obj and not getattr(holiday_obj, 'is_booking_allowed', True):
                     cell_status = "blocked"
                     is_blocked = True
                     block_reason = f"تعطیل رسمی: {holiday_title} (غیرقابل رزرو)"
