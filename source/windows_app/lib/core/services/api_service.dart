@@ -197,6 +197,8 @@ class ApiService {
     isOfflineEmergencyMode = false;
   }
 
+  static Future<void> logout() => clearTokens();
+
   /// احراز هویت با قابلیت اتصال آنلاین پایدار و سوییچ به حالت آفلاین در صورت عدم سلامت دیتابیس
   static Future<Map<String, dynamic>> login(String username, String password) async {
     isOfflineEmergencyMode = false;
@@ -542,17 +544,29 @@ class ApiService {
     }
   }
 
-  static Future<void> cancelReservation(int id) async {
+  static Future<void> cancelReservation(int id, {String? reason}) async {
     if (isOfflineEmergencyMode) return;
 
     final token = await getToken();
-    final response = await http.delete(
-      Uri.parse('$baseUrl/reservations/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 20));
+    http.Response response;
+    if (reason != null && reason.trim().isNotEmpty) {
+      response = await http.post(
+        Uri.parse('$baseUrl/reservations/$id/cancel'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'reason': reason.trim()}),
+      ).timeout(const Duration(seconds: 20));
+    } else {
+      response = await http.delete(
+        Uri.parse('$baseUrl/reservations/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 20));
+    }
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       final data = _decodeResponse(response);
@@ -873,6 +887,74 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> updateUser(int id, Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      final user = _localOfflineUsers.firstWhere((u) => u['id'] == id, orElse: () => {});
+      if (user.isNotEmpty) {
+        user.addAll(data);
+      }
+      return user;
+    }
+    final token = await getToken();
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$id'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = _decodeResponse(res);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return (resData is Map<String, dynamic>) ? resData : <String, dynamic>{};
+    }
+    throw Exception(resData['detail'] ?? 'خطا در بروزرسانی کاربر');
+  }
+
+  static Future<void> deleteSchool(int id) async {
+    if (isOfflineEmergencyMode) {
+      _localOfflineSchools.removeWhere((s) => s['id'] == id);
+      return;
+    }
+    final token = await getToken();
+    await http.delete(
+      Uri.parse('$baseUrl/schools/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+  }
+
+  static Future<Map<String, dynamic>> updateSchool(int id, Map<String, dynamic> data) async {
+    if (isOfflineEmergencyMode) {
+      final sch = _localOfflineSchools.firstWhere((s) => s['id'] == id, orElse: () => {});
+      if (sch.isNotEmpty) {
+        sch.addAll(data);
+      }
+      return sch;
+    }
+    final token = await getToken();
+    final res = await http.patch(
+      Uri.parse('$baseUrl/schools/$id'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = _decodeResponse(res);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return (resData is Map<String, dynamic>) ? resData : <String, dynamic>{};
+    }
+    throw Exception(resData['detail'] ?? 'خطا در ویرایش اطلاعات مدرسه');
+  }
+
+  static Future<Map<String, dynamic>> updateTimeSlot(int id, Map<String, dynamic> data) async {
+    final token = await getToken();
+    final res = await http.patch(
+      Uri.parse('$baseUrl/time-slots/$id'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    final resData = _decodeResponse(res);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return (resData is Map<String, dynamic>) ? resData : <String, dynamic>{};
+    }
+    throw Exception(resData['detail'] ?? 'خطا در ویرایش سانس زمانی');
+  }
+
   static Future<Map<String, dynamic>> createSchool(Map<String, dynamic> data) async {
     if (isOfflineEmergencyMode) {
       final newId = 10 + _localOfflineSchools.length + 1;
@@ -901,37 +983,7 @@ class ApiService {
     throw Exception(resData['detail'] ?? 'خطا در ثبت مدرسه در دیتابیس (کد وضعیت: ${res.statusCode})');
   }
 
-  static Future<void> deleteSchool(int id) async {
-    if (isOfflineEmergencyMode) {
-      _localOfflineSchools.removeWhere((s) => s['id'] == id);
-      return;
-    }
-    final token = await getToken();
-    await http.delete(
-      Uri.parse('$baseUrl/schools/$id'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-  }
 
-  static Future<void> updateSchool(int id, Map<String, dynamic> data) async {
-    if (isOfflineEmergencyMode) {
-      final idx = _localOfflineSchools.indexWhere((s) => s['id'] == id);
-      if (idx != -1) {
-        _localOfflineSchools[idx].addAll(data);
-      }
-      return;
-    }
-    final token = await getToken();
-    final res = await http.patch(
-      Uri.parse('$baseUrl/schools/$id'),
-      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
-    if (res.statusCode != 200) {
-      final resData = _decodeResponse(res);
-      throw Exception(resData['detail'] ?? 'خطا در ویرایش مدرسه');
-    }
-  }
 
   static Future<Map<String, dynamic>> createTimeSlot(Map<String, dynamic> data) async {
     if (isOfflineEmergencyMode) {

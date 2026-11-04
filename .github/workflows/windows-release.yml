@@ -1,4 +1,4 @@
-name: Build Windows Application & Publish Release
+name: Build Applications & Publish Release
 
 on:
   push:
@@ -10,11 +10,49 @@ permissions:
   contents: write
 
 jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: source/windows_app
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        working-directory: source/windows_app
+        run: flutter build apk --release
+
+      - name: Prepare APK Output
+        run: |
+          mkdir -p release-android
+          cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-android/IMH-Android-${{ github.ref_name }}.apk
+          cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-android/IMH-Android.apk
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: release-android/*
+
   build-windows:
     runs-on: windows-2022
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
@@ -28,20 +66,15 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Flutter Doctor
-        run: flutter doctor -v
-
       - name: Recreate Windows C++ Scaffolding
         working-directory: source/windows_app
         shell: pwsh
         run: |
           if (Test-Path windows) { Remove-Item -Recurse -Force windows }
           flutter create --platforms=windows --project-name=hmh_windows_app .
-          # Copy custom icon if available
           if (Test-Path assets/icons/app_icon.ico) {
             Copy-Item -Path assets/icons/app_icon.ico -Destination windows/runner/resources/app_icon.ico -Force
           }
-          # Copy custom centered square window configuration
           if (Test-Path windows_custom/main.cpp) {
             Copy-Item -Path windows_custom/main.cpp -Destination windows/runner/main.cpp -Force
           }
@@ -82,6 +115,38 @@ jobs:
           Copy-Item "IMH-Admin-Web.zip" "HMH-Admin-Web.zip" -Force
           Copy-Item "IMH-Server-Deployment.zip" "HMH-Server-Deployment.zip" -Force
 
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: |
+            app/Windows/Setup/IMH-Setup-x64.exe
+            app/Windows/Setup/HMH-Setup-x64.exe
+            IMH-Portable-x64.zip
+            HMH-Portable-x64.zip
+            IMH-Admin-Web.zip
+            IMH-Server-Deployment.zip
+
+  publish-release:
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: release-files
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-packages
+          path: release-files
+
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -89,21 +154,16 @@ jobs:
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          files: |
-            app/Windows/Setup/IMH-Setup-x64.exe
-            app/Windows/Setup/HMH-Setup-x64.exe
-            IMH-Portable-x64.zip
-            HMH-Portable-x64.zip
-            IMH-Admin-Web.zip
-            IMH-Server-Deployment.zip
+          files: release-files/*
           body: |
             ## سامانه متمرکز رزرواسیون سالن آمفی‌تئاتر مدارس امام حسین (ع) یزد (IMH) — نسخه ${{ github.ref_name }}
 
             ### محتویات بسته انتشار:
-            1. **IMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
-            2. **IMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم
-            3. **IMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)
-            4. **IMH-Server-Deployment.zip**: پکیج کامل استقرار سرور لینوکس (Docker Compose + MySQL 9.7 LTS + Nginx)
+            1. **IMH-Android-${{ github.ref_name }}.apk**: اپلیکیشن رسمی اندروید سامانه برای گوشی‌های هوشمند کاربران و مدیران
+            2. **IMH-Setup-x64.exe**: فایل نصبی تحت ویندوز ۱۰ و ۱۱ برای رایانه مدارس
+            3. **IMH-Portable-x64.zip**: نسخه پرتابل (بدون نیاز به نصب) برای اجرای مستقیم روی رایانه‌ها
+            4. **IMH-Admin-Web.zip**: بیلد نهایی پنل وب مدیریت ارشد (React + TypeScript)
+            5. **IMH-Server-Deployment.zip**: پکیج کامل استقرار سرور لینوکس (Docker Compose + MySQL 9.7 LTS + Nginx)
 
             ---
             **طراحی و توسعه‌یافته توسط دانش‌آموز: محمد صالح صیادی (پایه یازدهم فنی)**

@@ -7,6 +7,9 @@ import 'core/services/api_service.dart';
 import 'models/user.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/mobile/user/mobile_user_login_screen.dart';
+import 'screens/mobile/user/mobile_user_main_screen.dart';
+import 'screens/mobile/admin/mobile_admin_main_screen.dart';
 
 void maximizeAppWindow() {
   if (!Platform.isWindows) return;
@@ -110,13 +113,16 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAuth() async {
     // Smooth, instant transition without annoying freezing
     await Future.delayed(const Duration(milliseconds: 300));
+    final isMobile = Platform.isAndroid || Platform.isIOS;
 
     try {
       final token = await ApiService.getToken().timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (token == null || token.isEmpty || token.startsWith('offline_')) {
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => isMobile ? const MobileUserLoginScreen() : const LoginScreen(),
+          ),
         );
         return;
       }
@@ -124,14 +130,29 @@ class _SplashScreenState extends State<SplashScreen> {
       final res = await ApiService.getMe().timeout(const Duration(seconds: 8));
       final user = UserModel.fromJson(res);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => MainScreen(currentUser: user)),
-      );
+
+      if (isMobile) {
+        if (user.role == 'super_admin') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => MobileAdminMainScreen(currentUser: user)),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => MobileUserMainScreen(currentUser: user)),
+          );
+        }
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => MainScreen(currentUser: user)),
+        );
+      }
     } catch (_) {
       await ApiService.clearTokens();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(
+          builder: (_) => isMobile ? const MobileUserLoginScreen() : const LoginScreen(),
+        ),
       );
     }
   }

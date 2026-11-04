@@ -74,7 +74,8 @@ secrets/
 certs/
 
 # IDE / OS
-app/
+*.app/
+!source/windows_app/android/app/**
 .idea/
 .vscode/
 *.swp
@@ -82,3 +83,6 @@ app/
 *~
 .DS_Store
 Thumbs.db
+
+app/Windows/Portable/
+app/portable/

@@ -1,0 +1,63 @@
+name: Build Android APK & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter & Environment
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        working-directory: source/windows_app
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        working-directory: source/windows_app
+        run: flutter build apk --release
+
+      - name: Prepare APK Output
+        run: |
+          mkdir -p release-output
+          cp source/windows_app/build/app/outputs/flutter-apk/app-release.apk release-output/IMH-Android-v1.0.22.apk
+          ls -la release-output
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IMH-Android-v1.0.22
+          path: release-output/IMH-Android-v1.0.22.apk
+
+      - name: Create / Update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-output/IMH-Android-v1.0.22.apk
+          name: IMH Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
