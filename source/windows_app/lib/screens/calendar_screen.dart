@@ -41,9 +41,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String get _currentMonthTitle => _persianMonthNames[(_jalaliMonth - 1).clamp(0, 11)];
   String get _monthName => _currentMonthTitle;
 
+  /// Exact mathematical Persian weekday index (0 for Saturday/شنبه ... 6 for Friday/جمعه)
+  int _getPersianWeekdayIndex(Jalali j) {
+    // Dart DateTime.weekday: Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6, Sun=7
+    return (j.toDateTime().weekday + 1) % 7;
+  }
+
   int get _totalWeeksInMonth {
     final firstDay = Jalali(_jalaliYear, _jalaliMonth, 1);
-    final prevDaysCount = firstDay.weekDay - 1; // 0 for Saturday, 6 for Friday
+    final prevDaysCount = _getPersianWeekdayIndex(firstDay);
     final totalDays = prevDaysCount + firstDay.monthLength;
     return ((totalDays - 1) ~/ 7) + 1;
   }
@@ -62,7 +68,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   int _computeCurrentWeekIndex(int year, int month) {
     final now = Jalali.now();
     final firstDay = Jalali(year, month, 1);
-    final prevDaysCount = firstDay.weekDay - 1;
+    final prevDaysCount = _getPersianWeekdayIndex(firstDay);
     final totalDays = prevDaysCount + firstDay.monthLength;
     final totalWeeks = ((totalDays - 1) ~/ 7) + 1;
 
@@ -127,9 +133,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _errorMessage = null;
     });
 
-    // 1. Calculate Saturday of Week 1
+    // 1. Calculate Saturday of Week 1 with exact weekday calibration
     final firstDayOfMonth = Jalali(_jalaliYear, _jalaliMonth, 1);
-    final prevDaysCount = firstDayOfMonth.weekDay - 1; // Days from prev month in week 1
+    final prevDaysCount = _getPersianWeekdayIndex(firstDayOfMonth);
     final week1Sat = firstDayOfMonth - prevDaysCount;
 
     // 2. Calculate Saturday of selected week
@@ -200,20 +206,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final isToday = (currentJDay == Jalali.now());
         final isFri = (i == 6);
         final taghvimHoliday = TaghvimHolidayService.getHolidayTitle(currentJDay.year, currentJDay.month, currentJDay.day);
-        final effectiveIsHoliday = (matchedDay?.isHoliday ?? false) || (taghvimHoliday != null) || isFri;
-        final effectiveHolidayTitle = matchedDay?.holidayTitle ?? taghvimHoliday ?? (isFri ? 'تعطیل هفتگی جمعه' : null);
+        // Taghvim & Friday are the definitive source of truth for official holidays
+        final effectiveIsHoliday = (taghvimHoliday != null) || isFri;
+        final effectiveHolidayTitle = taghvimHoliday ?? (isFri ? 'تعطیل هفتگی جمعه' : null);
 
         if (matchedDay != null) {
           final slotsWithHolidays = matchedDay.slots.map((s) {
-            if (s.status == 'reserved' || s.status == 'blocked') {
+            if (s.status == 'reserved') {
               return s;
             }
-            if (effectiveIsHoliday) {
+            // Automatically unblock any old erroneous holiday blocks originating from old database seeds
+            final isBlockedByOldHoliday = s.status == 'blocked' && (s.blockReason?.contains('تعطیل') ?? false);
+            if (effectiveIsHoliday || isBlockedByOldHoliday) {
               return s.copyWith(
-                status: 'available', // Bookable!
-                isHoliday: true,
+                status: 'available', // Always bookable!
+                isHoliday: effectiveIsHoliday,
                 holidayTitle: effectiveHolidayTitle,
                 isBlocked: false,
+                blockReason: null,
               );
             }
             return s;

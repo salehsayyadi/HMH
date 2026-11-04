@@ -60,6 +60,20 @@ with open("/app/app/api/v1/system.py", "w") as f:
 docker restart hmh_backend
 docker restart hmh_nginx 2>/dev/null || true
 
+# پاکسازی رکوردهای تکراری و قدیمی تعطیلات از پایگاه‌داده
+docker exec hmh_backend python -c '
+import asyncio
+from app.core.database import AsyncSessionLocal
+from sqlalchemy import text
+
+async def cleanup():
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM holidays WHERE is_manual = 0;"))
+        await session.commit()
+
+asyncio.run(cleanup())
+' 2>/dev/null || true
+
 sleep 3
 
 # ۵. تست نهایی پینگ و زمان پاسخگویی

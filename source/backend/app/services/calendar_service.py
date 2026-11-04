@@ -53,11 +53,12 @@ async def get_calendar_week(
     # Map by (date, time_slot_id)
     res_map = {(r.reservation_date, r.time_slot_id): r for r in reservations}
 
-    # 3. Fetch holidays in this week
+    # 3. Fetch holidays in this week (only manual management holidays to avoid stale automatic duplicates)
     holidays_res = await db.execute(
         select(Holiday).where(
             Holiday.holiday_date >= start_date,
-            Holiday.holiday_date <= end_date
+            Holiday.holiday_date <= end_date,
+            Holiday.is_manual == True
         )
     )
     holidays_map = {h.holiday_date: h for h in holidays_res.scalars().all()}

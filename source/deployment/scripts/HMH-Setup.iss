@@ -2,7 +2,7 @@
 ; Imam Hossein Schools Central Amphitheater Reservation System
 #define MyAppName "IMH Amphitheater Reservation"
 #define MyAppPersianName "سامانه رزرو آمفی‌تئاتر مدارس امام حسین (ع) - IMH"
-#define MyAppVersion "1.0.20"
+#define MyAppVersion "1.0.21"
 #define MyAppPublisher "Imam Hossein Charitable Cultural and Educational Institute"
 #define MyAppURL "https://kirkir.salehvip-clud.ir"
 #define MyAppExeName "hmh_windows_app.exe"
