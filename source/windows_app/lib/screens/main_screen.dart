@@ -345,7 +345,8 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     ),
-  );
+  ),
+);
   }
 
   /// 8 Section Super Administrator Menu + Calendar View
