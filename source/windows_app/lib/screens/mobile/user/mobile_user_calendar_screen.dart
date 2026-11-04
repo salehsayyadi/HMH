@@ -27,12 +27,14 @@ class MobileUserCalendarScreen extends StatefulWidget {
 class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
   late int _jalaliYear;
   late int _jalaliMonth;
-  int _selectedWeekIndex = 0;
-  int _selectedDayIndex = 0; // 0 (Sat) to 6 (Fri)
+  int _selectedWeekIndex = 0; // 0 to 4 (5 weeks)
+  int _selectedDayIndex = 0; // 0 to 6 in current week
 
   bool _isLoading = true;
-  List<TimeSlotModel> _timeSlots = [];
-  List<CalendarDayModel> _days = [];
+  List<dynamic> _reservations = [];
+  List<Map<String, dynamic>> _timeSlots = [];
+  List<dynamic> _customHolidays = [];
+  final Map<int, Map<int, TaghvimEvent>> _taghvimHolidays = {};
 
   static const List<String> _persianMonthNames = [
     'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
@@ -40,29 +42,12 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
   ];
 
   static const List<String> _weekDayNames = [
-    'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'
+    'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'
   ];
 
   List<int> get _availableYears {
     final curYear = Jalali.now().year;
     return List.generate(3, (i) => curYear + i);
-  }
-
-  int _getPersianWeekdayIndex(Jalali j) => (j.toDateTime().weekday + 1) % 7;
-
-  int _computeTotalWeeks(int year, int month) {
-    final daysInMonth = (month <= 6) ? 31 : (month <= 11) ? 30 : Jalali(year, month).monthLength;
-    final firstDay = Jalali(year, month, 1);
-    final firstWd = _getPersianWeekdayIndex(firstDay);
-    return ((firstWd + daysInMonth + 6) / 7).floor();
-  }
-
-  int _computeCurrentWeekIndex(int year, int month) {
-    final now = Jalali.now();
-    if (now.year != year || now.month != month) return 0;
-    final firstDay = Jalali(year, month, 1);
-    final firstWd = _getPersianWeekdayIndex(firstDay);
-    return ((firstWd + now.day - 1) / 7).floor();
   }
 
   @override
@@ -71,124 +56,128 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
     final now = Jalali.now();
     _jalaliYear = now.year;
     _jalaliMonth = now.month;
-    _selectedWeekIndex = _computeCurrentWeekIndex(_jalaliYear, _jalaliMonth);
-    _selectedDayIndex = _getPersianWeekdayIndex(now);
+    _calculateInitialDay();
     TaghvimHolidayService.initialize();
     _loadCalendar();
+  }
+
+  void _calculateInitialDay() {
+    final now = Jalali.now();
+    if (now.year == _jalaliYear && now.month == _jalaliMonth) {
+      final day = now.day;
+      _selectedWeekIndex = (day - 1) ~/ 7;
+      if (_selectedWeekIndex > 4) _selectedWeekIndex = 4;
+      _selectedDayIndex = (day - 1) % 7;
+    } else {
+      _selectedWeekIndex = 0;
+      _selectedDayIndex = 0;
+    }
   }
 
   Future<void> _loadCalendar() async {
     setState(() => _isLoading = true);
 
-    await TaghvimHolidayService.syncMonthFromTaghvim(_jalaliYear, _jalaliMonth);
-
-    final firstDayOfMonth = Jalali(_jalaliYear, _jalaliMonth, 1);
-    final firstDayWd = _getPersianWeekdayIndex(firstDayOfMonth);
-    final monthSat = firstDayOfMonth - firstDayWd;
-    final currentWeekSat = monthSat + (_selectedWeekIndex * 7);
-
-    // Midweek target date for backend query
-    final targetG = (currentWeekSat + 3).toDateTime();
-    final targetDateStr = '${targetG.year}-${targetG.month.toString().padLeft(2, '0')}-${targetG.day.toString().padLeft(2, '0')}';
-
     try {
-      final data = await ApiService.getCalendarWeek(targetDate: targetDateStr);
-      final rawSlots = (data['time_slots'] as List? ?? []).map((s) => TimeSlotModel.fromJson(s)).toList();
-      final rawDays = (data['days'] as List? ?? []).map((d) => CalendarDayModel.fromJson(d)).toList();
+      final results = await Future.wait([
+        ApiService.getReservations(),
+        ApiService.getTimeSlots(),
+        ApiService.getHolidays(),
+        TaghvimHolidayService.getEventsForMonth(_jalaliMonth),
+      ]);
 
-      final calibratedDays = List.generate(7, (i) {
-        final currentJDay = currentWeekSat + i;
-        final currentGDay = currentJDay.toDateTime();
-        final dateStr = '${currentGDay.year}-${currentGDay.month.toString().padLeft(2, '0')}-${currentGDay.day.toString().padLeft(2, '0')}';
-
-        final isToday = (currentJDay == Jalali.now());
-        final isFri = (i == 6);
-        final taghvimHoliday = TaghvimHolidayService.getHolidayTitle(currentJDay.year, currentJDay.month, currentJDay.day);
-        final effectiveIsHoliday = (taghvimHoliday != null) || isFri;
-        final effectiveHolidayTitle = taghvimHoliday ?? (isFri ? 'تعطیل هفتگی جمعه' : null);
-
-        CalendarDayModel? matchedDay;
-        for (final rd in rawDays) {
-          if (rd.date == dateStr) {
-            matchedDay = rd;
-            break;
-          }
-        }
-
-        final monthNameDisplay = _persianMonthNames[currentJDay.month - 1];
-
-        if (matchedDay != null) {
-          final slotsWithHolidays = matchedDay.slots.map((s) {
-            if (s.status == 'reserved') return s;
-            final blockReasonStr = s.blockReason ?? '';
-            final isBlockedByOldHoliday = s.status == 'blocked' && (
-              blockReasonStr.contains('تعطیل') ||
-              blockReasonStr.contains('مبعث') ||
-              blockReasonStr.contains('ولادت') ||
-              blockReasonStr.contains('نوروز') ||
-              blockReasonStr.contains('رسمی')
-            );
-            if (effectiveIsHoliday || isBlockedByOldHoliday) {
-              return s.copyWith(
-                status: 'available',
-                isHoliday: effectiveIsHoliday,
-                holidayTitle: effectiveHolidayTitle,
-                isBlocked: false,
-                blockReason: null,
-              );
-            }
-            return s;
-          }).toList();
-
-          return CalendarDayModel(
-            date: dateStr,
-            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
-            dayName: _weekDayNames[i],
-            dayNumber: currentJDay.day.toString(),
-            monthNameDisplay: monthNameDisplay,
-            isToday: isToday,
-            isHoliday: effectiveIsHoliday,
-            holidayTitle: effectiveHolidayTitle,
-            isOutOfMonth: false,
-            slots: slotsWithHolidays,
-          );
-        }
-
-        return CalendarDayModel(
-          date: dateStr,
-          jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
-          dayName: _weekDayNames[i],
-          dayNumber: currentJDay.day.toString(),
-          monthNameDisplay: monthNameDisplay,
-          isToday: isToday,
-          isHoliday: effectiveIsHoliday,
-          holidayTitle: effectiveHolidayTitle,
-          isOutOfMonth: false,
-          slots: rawSlots.map((ts) => CalendarCellModel(
-            date: dateStr,
-            jalaliDate: '${currentJDay.day} $monthNameDisplay ${currentJDay.year}',
-            jalaliDayName: _weekDayNames[i],
-            dayOfWeek: i,
-            timeSlotId: ts.id,
-            timeSlotTitle: ts.title,
-            status: 'available',
-            isHoliday: effectiveIsHoliday,
-            holidayTitle: effectiveHolidayTitle,
-            isBlocked: false,
-          )).toList(),
-        );
-      });
-
-      if (!mounted) return;
-      setState(() {
-        _timeSlots = rawSlots;
-        _days = calibratedDays;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _reservations = results[0] as List<dynamic>;
+          _timeSlots = (results[1] as List<dynamic>)
+              .map((s) => s is Map<String, dynamic> ? s : Map<String, dynamic>.from(s as Map))
+              .toList();
+          _customHolidays = results[2] as List<dynamic>;
+          _taghvimHolidays[_jalaliMonth] = results[3] as Map<int, TaghvimEvent>;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (mounted) {
+        // Fallback default time slots if offline
+        if (_timeSlots.isEmpty) {
+          _timeSlots = [
+            {'id': 1, 'title': '۰۸:۰۰ تا ۱۰:۰۰', 'start_time': '08:00', 'end_time': '10:00'},
+            {'id': 2, 'title': '۱۰:۰۰ تا ۱۲:۰۰', 'start_time': '10:00', 'end_time': '12:00'},
+            {'id': 3, 'title': '۱۲:۰۰ تا ۱۴:۰۰', 'start_time': '12:00', 'end_time': '14:00'},
+            {'id': 4, 'title': '۱۴:۰۰ تا ۱۶:۰۰', 'start_time': '14:00', 'end_time': '16:00'},
+            {'id': 5, 'title': '۱۶:۰۰ تا ۱۸:۰۰', 'start_time': '16:00', 'end_time': '18:00'},
+          ];
+        }
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  int get _daysInSelectedMonth {
+    if (_jalaliMonth <= 6) return 31;
+    if (_jalaliMonth <= 11) return 30;
+    return Jalali(_jalaliYear, _jalaliMonth).isLeapYear() ? 30 : 29;
+  }
+
+  /// Exact days of the selected week, strictly starting from day 1 of the month
+  List<Jalali> get _currentWeekDays {
+    final startDay = (_selectedWeekIndex * 7) + 1;
+    final days = <Jalali>[];
+    for (int i = 0; i < 7; i++) {
+      final dayNum = startDay + i;
+      if (dayNum <= _daysInSelectedMonth) {
+        days.add(Jalali(_jalaliYear, _jalaliMonth, dayNum));
+      }
+    }
+    return days;
+  }
+
+  Jalali? get _activeDay {
+    final week = _currentWeekDays;
+    if (_selectedDayIndex < week.length) {
+      return week[_selectedDayIndex];
+    }
+    return week.isNotEmpty ? week.first : null;
+  }
+
+  String _formatGregorian(Jalali j) {
+    final g = j.toGregorian();
+    final y = g.year.toString().padLeft(4, '0');
+    final m = g.month.toString().padLeft(2, '0');
+    final d = g.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  TaghvimEvent? _getHolidayForDay(Jalali day) {
+    final monthEvents = _taghvimHolidays[day.month];
+    if (monthEvents != null && monthEvents.containsKey(day.day)) {
+      return monthEvents[day.day];
+    }
+    final title = TaghvimHolidayService.getHolidayTitle(day.year, day.month, day.day);
+    if (title != null) {
+      return TaghvimEvent(day: day.day, title: title, isHoliday: true);
+    }
+    return null;
+  }
+
+  bool _isDayHoliday(Jalali day) {
+    if (day.weekDay == 7) return true; // Friday
+    final tEvent = _getHolidayForDay(day);
+    if (tEvent != null && tEvent.isHoliday) return true;
+    return false;
+  }
+
+  Map<String, dynamic>? _findReservation(Jalali day, int slotId) {
+    final gStr = _formatGregorian(day);
+    for (final r in _reservations) {
+      final rDate = (r['reservation_date'] ?? '').toString();
+      final rSlot = r['time_slot_id'];
+      final rStatus = (r['status'] ?? '').toString();
+      if (rDate.startsWith(gStr) && rSlot == slotId && rStatus == 'confirmed') {
+        return r is Map<String, dynamic> ? r : Map<String, dynamic>.from(r as Map);
+      }
+    }
+    return null;
   }
 
   void _changeMonth(int delta) {
@@ -234,7 +223,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
       return;
     }
 
-    // Available or Holiday -> Bookable
+    // Available or Holiday -> Bookable!
     MobileBookingSheet.show(
       context,
       cell: cell,
@@ -245,10 +234,9 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalWeeks = _computeTotalWeeks(_jalaliYear, _jalaliMonth);
-    final selectedDay = (_days.length > _selectedDayIndex) ? _days[_selectedDayIndex] : null;
-
-    final weekTitles = ['هفته اول', 'هفته دوم', 'هفته سوم', 'هفته چهارم', 'هفته پنجم', 'هفته ششم'];
+    final activeDay = _activeDay;
+    final currentWeek = _currentWeekDays;
+    final weekTitles = ['هفته اول', 'هفته دوم', 'هفته سوم', 'هفته چهارم', 'هفته پنجم'];
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -278,15 +266,15 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 2),
-                      if (selectedDay != null)
+                      if (activeDay != null)
                         Text(
-                          '${selectedDay.dayName} ${selectedDay.dayNumber} ${_persianMonthNames[_jalaliMonth - 1]} $_jalaliYear',
-                          style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryGreen, fontWeight: FontWeight.w600),
+                          '${_weekDayNames[(activeDay.weekDay - 1) % 7]} ${activeDay.day} ${_persianMonthNames[_jalaliMonth - 1]} $_jalaliYear',
+                          style: const TextStyle(fontSize: 12, color: AppColors.secondaryGreen, fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
                       const SizedBox(height: 14),
 
-                      // Month & Year Selector Card
+                      // Month & Year Selector Card (Strictly 3 rolling years)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -297,56 +285,36 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Left: Month navigation arrows
+                            // Navigation arrows
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.chevron_right_rounded, color: AppColors.primaryGreen),
-                                  onPressed: () => _changeMonth(1),
-                                  tooltip: 'ماه بعد',
+                                  onPressed: () => _changeMonth(-1),
+                                  tooltip: 'ماه قبل',
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.chevron_left_rounded, color: AppColors.primaryGreen),
-                                  onPressed: () => _changeMonth(-1),
-                                  tooltip: 'ماه قبل',
+                                  onPressed: () => _changeMonth(1),
+                                  tooltip: 'ماه بعد',
                                 ),
                               ],
                             ),
 
-                            // Right: Dropdowns for Year & Month
+                            // Dropdowns for Year & Month
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Year Dropdown
-                                PopupMenuButton<int>(
-                                  initialValue: _jalaliYear,
-                                  onSelected: (y) {
-                                    setState(() => _jalaliYear = y);
-                                    _loadCalendar();
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '$_jalaliYear',
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                                      ),
-                                      const Icon(Icons.arrow_drop_down, color: AppColors.primaryGreen, size: 18),
-                                    ],
-                                  ),
-                                  itemBuilder: (_) => _availableYears.map((yr) => PopupMenuItem(
-                                    value: yr,
-                                    child: Text('$yr'),
-                                  )).toList(),
-                                ),
-                                const SizedBox(width: 8),
-
                                 // Month Dropdown
                                 PopupMenuButton<int>(
                                   initialValue: _jalaliMonth,
                                   onSelected: (m) {
-                                    setState(() => _jalaliMonth = m);
+                                    setState(() {
+                                      _jalaliMonth = m;
+                                      _selectedWeekIndex = 0;
+                                      _selectedDayIndex = 0;
+                                    });
                                     _loadCalendar();
                                   },
                                   child: Row(
@@ -364,6 +332,34 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                                     child: Text(_persianMonthNames[idx]),
                                   )),
                                 ),
+                                const SizedBox(width: 8),
+
+                                // Year Dropdown
+                                PopupMenuButton<int>(
+                                  initialValue: _jalaliYear,
+                                  onSelected: (y) {
+                                    setState(() {
+                                      _jalaliYear = y;
+                                      _selectedWeekIndex = 0;
+                                      _selectedDayIndex = 0;
+                                    });
+                                    _loadCalendar();
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '$_jalaliYear',
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down, color: AppColors.primaryGreen, size: 18),
+                                    ],
+                                  ),
+                                  itemBuilder: (_) => _availableYears.map((yr) => PopupMenuItem(
+                                    value: yr,
+                                    child: Text('$yr'),
+                                  )).toList(),
+                                ),
                               ],
                             ),
                           ],
@@ -371,18 +367,20 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Week Selector Pills
+                      // Week Selector Pills (هفته اول تا پنجم)
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: List.generate(totalWeeks, (wIdx) {
+                          children: List.generate(5, (wIdx) {
                             final isSel = wIdx == _selectedWeekIndex;
                             return Padding(
                               padding: const EdgeInsets.only(left: 6),
                               child: InkWell(
                                 onTap: () {
-                                  setState(() => _selectedWeekIndex = wIdx);
-                                  _loadCalendar();
+                                  setState(() {
+                                    _selectedWeekIndex = wIdx;
+                                    _selectedDayIndex = 0;
+                                  });
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: Container(
@@ -395,7 +393,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    weekTitles[wIdx.clamp(0, 5)],
+                                    weekTitles[wIdx],
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
@@ -410,64 +408,79 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Day Chips Strip (Saturday to Friday)
-                      if (_days.isNotEmpty)
-                        Row(
-                          children: List.generate(7, (dIdx) {
-                            final d = _days[dIdx];
-                            final isSel = dIdx == _selectedDayIndex;
-                            return Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 2),
-                                child: InkWell(
-                                  onTap: () => setState(() => _selectedDayIndex = dIdx),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSel ? AppColors.primaryGreen : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSel
-                                            ? AppColors.primaryGreen
-                                            : (d.isHoliday ? const Color(0xFFFCA5A5) : AppColors.cardBorder),
+                      // Day Selector Horizontal Strip (Strictly days of this month, starts with Day 1)
+                      Row(
+                        children: List.generate(7, (index) {
+                          if (index >= currentWeek.length) {
+                            return const Expanded(child: SizedBox());
+                          }
+                          final day = currentWeek[index];
+                          final isSelected = _selectedDayIndex == index;
+                          final isHoliday = _isDayHoliday(day);
+                          final dayName = _weekDayNames[(day.weekDay - 1) % 7];
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: InkWell(
+                                onTap: () => setState(() => _selectedDayIndex = index),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.primaryGreen
+                                        : isHoliday
+                                            ? const Color(0xFFFFEBEE)
+                                            : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.primaryGreen
+                                          : isHoliday
+                                              ? const Color(0xFFFFCDD2)
+                                              : AppColors.cardBorder,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        dayName,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : isHoliday
+                                                  ? const Color(0xFFC62828)
+                                                  : AppColors.secondaryText,
+                                        ),
                                       ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          d.dayName,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: isSel
-                                                ? Colors.white
-                                                : (d.isHoliday ? AppColors.holidayRedText : AppColors.secondaryText),
-                                          ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${day.day}',
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : isHoliday
+                                                  ? const Color(0xFFC62828)
+                                                  : AppColors.darkGreen,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          d.dayNumber,
-                                          style: TextStyle(
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: isSel
-                                                ? Colors.white
-                                                : (d.isHoliday ? AppColors.holidayRedText : AppColors.darkGreen),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          }),
-                        ),
+                            ),
+                          );
+                        }),
+                      ),
                       const SizedBox(height: 14),
 
-                      // Holiday Banner if selected day is holiday (user-06.png)
-                      if (selectedDay != null && selectedDay.isHoliday) ...[
+                      // Holiday Banner if active day is holiday
+                      if (activeDay != null && _isDayHoliday(activeDay)) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
@@ -494,12 +507,12 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      selectedDay.holidayTitle ?? 'تعطیل رسمی',
+                                      _getHolidayForDay(activeDay)?.title ?? (activeDay.weekDay == 7 ? 'تعطیل هفتگی جمعه' : 'تعطیل رسمی'),
                                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.holidayRedText),
                                     ),
                                     const SizedBox(height: 2),
                                     const Text(
-                                      'رزرو سالن برای برنامه‌های مدارس مجاز است',
+                                      'رزرو سالن برای برنامه‌ها و جشن‌های مدارس مجاز است',
                                       style: TextStyle(fontSize: 10.5, color: AppColors.secondaryText),
                                     ),
                                   ],
@@ -512,15 +525,15 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                         const SizedBox(height: 12),
                       ],
 
-                      // Time Slots for Selected Day
+                      // Time Slots for Active Day
                       if (_isLoading)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
                           child: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
                         )
-                      else if (selectedDay != null && selectedDay.slots.isNotEmpty) ...[
-                        ...selectedDay.slots.map((slot) {
-                          return _buildSlotCard(slot);
+                      else if (activeDay != null && _timeSlots.isNotEmpty) ...[
+                        ..._timeSlots.map((slot) {
+                          return _buildSlotCardForDay(activeDay, slot);
                         }),
                       ] else ...[
                         const Padding(
@@ -536,7 +549,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Color Legend at bottom (user-05.png)
+                      // Color Legend at bottom
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
@@ -567,7 +580,48 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
     );
   }
 
-  Widget _buildSlotCard(CalendarCellModel slot) {
+  Widget _buildSlotCardForDay(Jalali day, Map<String, dynamic> slot) {
+    final slotId = slot['id'] is int ? slot['id'] as int : int.tryParse(slot['id'].toString()) ?? 1;
+    final slotTitle = slot['title']?.toString() ?? 'سانس $slotId';
+    final startTime = slot['start_time']?.toString() ?? '08:00';
+    final endTime = slot['end_time']?.toString() ?? '10:00';
+    final gStr = _formatGregorian(day);
+    final jStr = '${day.day} ${_persianMonthNames[day.month - 1]} ${day.year}';
+    final jDayName = _weekDayNames[(day.weekDay - 1) % 7];
+
+    final res = _findReservation(day, slotId);
+    final isHoliday = _isDayHoliday(day);
+    final tEvent = _getHolidayForDay(day);
+    final holidayTitle = tEvent?.title ?? (day.weekDay == 7 ? 'تعطیل هفتگی جمعه' : 'تعطیل رسمی');
+
+    String status = 'available';
+    int? reservationId;
+    String? schoolName;
+    String? userFullName;
+
+    if (res != null) {
+      status = 'reserved';
+      reservationId = res['id'] is int ? res['id'] as int : int.tryParse(res['id'].toString());
+      schoolName = res['school_name']?.toString() ?? (res['school'] is Map ? res['school']['name']?.toString() : 'مدرسه متقاضی');
+      userFullName = res['user_name']?.toString() ?? (res['user'] is Map ? '${res['user']['first_name']} ${res['user']['last_name']}' : 'متقاضی');
+    }
+
+    final cell = CalendarCellModel(
+      date: gStr,
+      jalaliDate: jStr,
+      jalaliDayName: jDayName,
+      dayOfWeek: (day.weekDay - 1) % 7,
+      timeSlotId: slotId,
+      timeSlotTitle: '$slotTitle ($startTime – $endTime)',
+      status: status,
+      isHoliday: isHoliday,
+      holidayTitle: isHoliday ? holidayTitle : null,
+      isBlocked: false,
+      reservationId: reservationId,
+      schoolName: schoolName,
+      userFullName: userFullName,
+    );
+
     Color cardBg;
     Color borderColor;
     Color textColor;
@@ -576,32 +630,22 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
     Color badgeTextColor;
     String subtitle;
 
-    final isHoliday = slot.isHoliday;
-
-    if (slot.status == 'blocked') {
-      cardBg = AppColors.disabledGray;
-      borderColor = const Color(0xFFD1D5DB);
-      textColor = AppColors.disabledText;
-      badgeText = 'مسدود';
-      badgeColor = const Color(0xFFE5E7EB);
-      badgeTextColor = AppColors.disabledText;
-      subtitle = slot.blockReason ?? 'توسط مدیریت';
-    } else if (slot.status == 'reserved') {
+    if (cell.status == 'reserved') {
       cardBg = AppColors.reservationBlue;
       borderColor = const Color(0xFFBFDBFE);
       textColor = AppColors.reservationBlueText;
-      badgeText = slot.schoolName ?? 'رزرو شده';
+      badgeText = cell.schoolName ?? 'رزرو شده';
       badgeColor = Colors.white;
       badgeTextColor = AppColors.reservationBlueText;
-      subtitle = slot.userFullName ?? 'ثبت شده';
-    } else if (isHoliday) {
+      subtitle = cell.userFullName ?? 'ثبت شده';
+    } else if (cell.isHoliday) {
       cardBg = AppColors.holidayRed;
       borderColor = const Color(0xFFFCA5A5);
       textColor = AppColors.holidayRedText;
       badgeText = '+ آزاد';
       badgeColor = Colors.white;
       badgeTextColor = AppColors.holidayRedText;
-      subtitle = slot.holidayTitle ?? 'تعطیل رسمی (قابل رزرو)';
+      subtitle = '$holidayTitle (قابل رزرو)';
     } else {
       cardBg = AppColors.pastelGreen;
       borderColor = const Color(0xFFA7F3D0);
@@ -622,7 +666,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _onSlotTapped(slot),
+          onTap: () => _onSlotTapped(cell),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -634,7 +678,7 @@ class _MobileUserCalendarScreenState extends State<MobileUserCalendarScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        slot.timeSlotTitle,
+                        cell.timeSlotTitle,
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
