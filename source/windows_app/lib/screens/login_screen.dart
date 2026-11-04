@@ -6,6 +6,7 @@ import '../core/services/api_service.dart';
 import '../models/user.dart';
 import '../main.dart';
 import 'main_screen.dart';
+import 'server_settings_modal.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -232,6 +233,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.emerald.withOpacity(0.08),
+                ),
+              ),
+            ),
+
+            // Server configuration quick access button
+            Positioned(
+              top: 20,
+              left: 20,
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                elevation: 1,
+                child: InkWell(
+                  mouseCursor: SystemMouseCursors.click,
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () async {
+                    await ServerSettingsModal.show(context);
+                    if (mounted) setState(() {});
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.dns_rounded, size: 16, color: AppColors.primaryGreen),
+                        const SizedBox(width: 8),
+                        Text(
+                          ApiService.baseUrl.replaceAll('https://', '').replaceAll('/api/v1', ''),
+                          style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', color: AppColors.darkGreen, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     # Server & Domains
     SERVER_OS: str = "Ubuntu 24.04 LTS"
     DOMAIN: str = "salehvip-clud.ir"
-    SUBDOMAIN: str = "reserve.salehvip-clud.ir"
-    API_BASE_URL: str = "https://reserve.salehvip-clud.ir/api/v1"
-    WEBSOCKET_URL: str = "wss://reserve.salehvip-clud.ir/ws"
+    SUBDOMAIN: str = "kirkir.salehvip-clud.ir"
+    API_BASE_URL: str = "https://kirkir.salehvip-clud.ir/api/v1"
+    WEBSOCKET_URL: str = "wss://kirkir.salehvip-clud.ir/ws"
     HTTP_PORT: int = 80
     HTTPS_PORT: int = 443
 
@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
+        "https://kirkir.salehvip-clud.ir",
         "https://reserve.salehvip-clud.ir",
         "http://localhost:3000",
         "http://localhost:5173",

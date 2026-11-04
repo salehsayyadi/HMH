@@ -89,7 +89,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'نسخه تولیدی سامانه: ۱.۰.۱۵',
+                      'نسخه تولیدی سامانه: ۱.۰.۱۶',
                       style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
                     ),
                   ],

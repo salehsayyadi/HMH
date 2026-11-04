@@ -146,18 +146,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 20),
 
-            // 6 KPI Cards Grid (Enlarged)
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
-                childAspectRatio: 1.45,
-              ),
-              itemCount: kpis.length,
-              itemBuilder: (context, i) {
+            // Responsive KPI Cards Grid
+            LayoutBuilder(
+              builder: (context, constraints) {
+                int colCount = 6;
+                double ratio = 1.45;
+                if (constraints.maxWidth < 1100) {
+                  colCount = 3;
+                  ratio = 1.7;
+                }
+                if (constraints.maxWidth < 650) {
+                  colCount = 2;
+                  ratio = 1.5;
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: colCount,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: ratio,
+                  ),
+                  itemCount: kpis.length,
+                  itemBuilder: (context, i) {
                 final kpi = kpis[i];
                 return Container(
                   padding: const EdgeInsets.all(16),
@@ -205,8 +218,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 );
               },
-            ),
-            const SizedBox(height: 20),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
 
             // Charts & Breakdown Row
             Row(

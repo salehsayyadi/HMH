@@ -5,12 +5,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String defaultHost = 'reserve.salehvip-clud.ir';
+  static const String defaultHost = 'kirkir.salehvip-clud.ir';
   static const String defaultProtocol = 'https';
   static const String defaultPort = '443';
   static const String defaultApiPath = '/api/v1';
 
-  static String baseUrl = 'https://reserve.salehvip-clud.ir/api/v1';
+  static String baseUrl = 'https://kirkir.salehvip-clud.ir/api/v1';
   static bool isOfflineEmergencyMode = false;
 
   // Stored active session credentials for seamless online reconnection
@@ -26,7 +26,14 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString('server_base_url');
     if (savedUrl != null && savedUrl.trim().isNotEmpty) {
-      baseUrl = savedUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      if (savedUrl.contains('reserve.salehvip-clud.ir')) {
+        // مهاجرت خودکار دامنه قدیمی به دامنه جدید فعال
+        baseUrl = savedUrl.replaceAll('reserve.salehvip-clud.ir', 'kirkir.salehvip-clud.ir');
+        await prefs.setString('server_base_url', baseUrl);
+        await prefs.setString('server_host', 'kirkir.salehvip-clud.ir');
+      } else {
+        baseUrl = savedUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      }
     } else {
       baseUrl = 'https://$defaultHost$defaultApiPath';
     }
@@ -58,11 +65,19 @@ class ApiService {
   /// دریافت اجزای تفکیک‌شده تنظیمات سرور
   static Future<Map<String, String>> getServerConfig() async {
     final prefs = await SharedPreferences.getInstance();
-    final host = prefs.getString('server_host') ?? defaultHost;
+    var host = prefs.getString('server_host') ?? defaultHost;
+    if (host == 'reserve.salehvip-clud.ir') {
+      host = 'kirkir.salehvip-clud.ir';
+      await prefs.setString('server_host', host);
+    }
     final protocol = prefs.getString('server_protocol') ?? defaultProtocol;
     final port = prefs.getString('server_port') ?? defaultPort;
     final apiPath = prefs.getString('server_api_path') ?? defaultApiPath;
-    final fullUrl = prefs.getString('server_base_url') ?? '$protocol://$host$apiPath';
+    var fullUrl = prefs.getString('server_base_url') ?? '$protocol://$host$apiPath';
+    if (fullUrl.contains('reserve.salehvip-clud.ir')) {
+      fullUrl = fullUrl.replaceAll('reserve.salehvip-clud.ir', 'kirkir.salehvip-clud.ir');
+      await prefs.setString('server_base_url', fullUrl);
+    }
 
     return {
       'host': host,

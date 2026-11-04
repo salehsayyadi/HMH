@@ -177,7 +177,7 @@ class _ServerSettingsModalState extends State<ServerSettingsModal> {
                   textDirection: TextDirection.ltr,
                   style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
                   decoration: InputDecoration(
-                    hintText: 'مثال: reserve.salehvip-clud.ir یا 192.168.1.100',
+                    hintText: 'مثال: kirkir.salehvip-clud.ir یا 192.168.1.100',
                     prefixIcon: const Icon(Icons.language_rounded, size: 20, color: AppColors.secondaryText),
                     filled: true,
                     fillColor: AppColors.veryLightGreen,

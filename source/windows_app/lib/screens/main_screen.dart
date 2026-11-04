@@ -110,15 +110,18 @@ class _MainScreenState extends State<MainScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.mainBackground,
-        body: Row(
-          children: [
-            // Right Sidebar matching HMH visual identity
-            Container(
-              width: 280,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                border: Border(left: BorderSide(color: AppColors.cardBorder, width: 1.2)),
-              ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final sidebarWidth = constraints.maxWidth < 1150 ? 245.0 : 270.0;
+            return Row(
+              children: [
+                // Right Sidebar matching HMH visual identity
+                Container(
+                  width: sidebarWidth,
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    border: Border(left: BorderSide(color: AppColors.cardBorder, width: 1.2)),
+                  ),
               child: Column(
                 children: [
                   // Official Institute Logo Header
@@ -339,9 +342,10 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  );
   }
 
   /// 8 Section Super Administrator Menu + Calendar View

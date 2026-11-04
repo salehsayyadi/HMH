@@ -343,44 +343,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final now = Jalali.now();
     final todayStr = 'امروز: ${now.formatter.wN}، ${now.day} ${_persianMonthNames[now.month - 1]} ${now.year}';
 
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryGreen),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.cloud_off, size: 54, color: AppColors.holidayRedText),
-            const SizedBox(height: 14),
-            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: AppColors.mainText)),
-            const SizedBox(height: 18),
-            ElevatedButton(
-              onPressed: _loadCalendar,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('تلاش مجدد', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Calendar Control Header
+          // Top Calendar Control Header (Always visible for seamless navigation)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(18),
@@ -393,37 +363,46 @@ class _CalendarScreenState extends State<CalendarScreen> {
               children: [
                 // Interactive Month and Year selector
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.veryLightGreen,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.chevron_right, size: 22, color: AppColors.primaryGreen),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         tooltip: 'ماه بعد',
+                        mouseCursor: SystemMouseCursors.click,
                         onPressed: () => _changeMonth(1),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
 
                       // Month Picker Popup
                       PopupMenuButton<int>(
                         tooltip: 'انتخاب ماه',
                         initialValue: _jalaliMonth - 1,
                         onSelected: _selectMonth,
-                        child: Row(
-                          children: [
-                            Text(
-                              _currentMonthTitle,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _currentMonthTitle,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
+                              ],
                             ),
-                            const SizedBox(width: 2),
-                            const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
-                          ],
+                          ),
                         ),
                         itemBuilder: (ctx) => List.generate(12, (i) => PopupMenuItem(
                           value: i,
@@ -438,22 +417,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         )),
                       ),
 
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
 
                       // Year Picker Popup
                       PopupMenuButton<int>(
                         tooltip: 'انتخاب سال',
                         initialValue: _jalaliYear,
                         onSelected: _selectYear,
-                        child: Row(
-                          children: [
-                            Text(
-                              '$_jalaliYear',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontFamily: 'monospace'),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$_jalaliYear',
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontFamily: 'monospace'),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
+                              ],
                             ),
-                            const SizedBox(width: 2),
-                            const Icon(Icons.arrow_drop_down, size: 18, color: AppColors.primaryGreen),
-                          ],
+                          ),
                         ),
                         itemBuilder: (ctx) => _availableYears.map((yr) => PopupMenuItem(
                           value: yr,
@@ -468,79 +454,95 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         )).toList(),
                       ),
 
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.chevron_left, size: 22, color: AppColors.primaryGreen),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         tooltip: 'ماه قبل',
+                        mouseCursor: SystemMouseCursors.click,
                         onPressed: () => _changeMonth(-1),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
 
-                // Dynamic Week Tabs (supports 4, 5, 6 or 7 weeks dynamically depending on month)
-                ...List.generate(_totalWeeksInMonth, (index) {
-                  const weekLabels = [
-                    'هفته اول',
-                    'هفته دوم',
-                    'هفته سوم',
-                    'هفته چهارم',
-                    'هفته پنجم',
-                    'هفته ششم',
-                    'هفته هفتم',
-                  ];
-                  final isSelected = _selectedWeekIndex == index;
-                  final label = index < weekLabels.length ? weekLabels[index] : 'هفته ${index + 1}';
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedWeekIndex = index;
-                        });
-                        _loadCalendar();
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primaryGreen : AppColors.veryLightGreen,
-                          borderRadius: BorderRadius.circular(10),
-                          border: isSelected ? null : Border.all(color: AppColors.cardBorder.withOpacity(0.6)),
-                        ),
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                            color: isSelected ? AppColors.white : AppColors.secondaryText,
+                // Dynamic Week Tabs (Scrollable & Responsive, never overflows!)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_totalWeeksInMonth, (index) {
+                        const weekLabels = [
+                          'هفته اول',
+                          'هفته دوم',
+                          'هفته سوم',
+                          'هفته چهارم',
+                          'هفته پنجم',
+                          'هفته ششم',
+                          'هفته هفتم',
+                        ];
+                        final isSelected = _selectedWeekIndex == index;
+                        final label = index < weekLabels.length ? weekLabels[index] : 'هفته ${index + 1}';
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Material(
+                            color: isSelected ? AppColors.primaryGreen : AppColors.veryLightGreen,
+                            borderRadius: BorderRadius.circular(10),
+                            child: InkWell(
+                              mouseCursor: SystemMouseCursors.click,
+                              onTap: () {
+                                if (_selectedWeekIndex == index && !_isLoading) return;
+                                setState(() {
+                                  _selectedWeekIndex = index;
+                                });
+                                _loadCalendar();
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: isSelected ? null : Border.all(color: AppColors.cardBorder.withOpacity(0.6)),
+                                ),
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                    color: isSelected ? AppColors.white : AppColors.secondaryText,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                     ),
-                  );
-                }),
+                  ),
+                ),
 
-                const Spacer(),
+                const SizedBox(width: 12),
 
                 // Dynamic Today Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.pastelGreen,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.today, size: 16, color: AppColors.primaryGreen),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         todayStr,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
                     ],
                   ),
@@ -550,9 +552,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Weekly Calendar Table
+          // Main Calendar Content Area (Responsive Loading & Error states)
           Expanded(
-            child: Container(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primaryGreen),
+                  )
+                : _errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.cloud_off, size: 54, color: AppColors.holidayRedText),
+                            const SizedBox(height: 14),
+                            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: AppColors.mainText)),
+                            const SizedBox(height: 18),
+                            ElevatedButton(
+                              onPressed: _loadCalendar,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreen,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('تلاش مجدد', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
               decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(18),
@@ -568,12 +596,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     // Column Headers (Day/Date column on Right, then 5 Time Slots)
                     Container(
                       color: AppColors.veryLightGreen,
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                       child: Row(
                         children: [
                           // Right Date Column Header
                           const SizedBox(
-                            width: 150,
+                            width: 145,
                             child: Row(
                               children: [
                                 Icon(Icons.calendar_today, size: 16, color: AppColors.primaryGreen),
@@ -590,12 +618,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             child: Center(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.access_time, size: 15, color: AppColors.secondaryText),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    ts.title,
-                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.mainText),
+                                  const Icon(Icons.access_time, size: 14, color: AppColors.secondaryText),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        ts.title,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mainText),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -621,8 +655,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               children: [
                                 // Day & Jalali Date Box (Right column)
                                 Container(
-                                  width: 160,
-                                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                                  width: 145,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
                                   color: day.isToday
                                       ? AppColors.pastelGreen.withOpacity(0.4)
                                       : (isOutOfMonth ? Colors.grey.shade50 : Colors.transparent),
@@ -633,7 +667,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       Text(
                                         day.dayName,
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 13.5,
                                           fontWeight: FontWeight.bold,
                                           color: isOutOfMonth
                                               ? Colors.grey.shade400
@@ -646,7 +680,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                             ? 'خارج از محدوده ماه'
                                             : '${day.dayNumber} ${day.monthNameDisplay ?? _monthName}',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 11.5,
                                           color: isOutOfMonth
                                               ? Colors.grey.shade400
                                               : (day.isHoliday ? AppColors.holidayRedText : AppColors.secondaryText),
@@ -730,48 +764,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(5.0),
+      padding: const EdgeInsets.all(4.0),
       child: Material(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () => _onCellClicked(cell),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             alignment: Alignment.center,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (cellIcon != null) Icon(cellIcon, size: 15, color: textColor),
-                    const SizedBox(width: 5),
+                    if (cellIcon != null) Icon(cellIcon, size: 14, color: textColor),
+                    const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        line1,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          line1,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  line2,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: textColor.withOpacity(0.9),
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    line2,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: textColor.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
               ],
             ),

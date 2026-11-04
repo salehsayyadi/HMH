@@ -11,10 +11,10 @@ class ServerDatabaseScreen extends StatefulWidget {
 
 class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
   // Server connection fields
-  final _subDomainController = TextEditingController(text: 'reserve.salehvip-clud.ir');
+  final _subDomainController = TextEditingController(text: 'kirkir.salehvip-clud.ir');
   final _httpsPortController = TextEditingController(text: '443');
-  final _apiUrlController = TextEditingController(text: 'https://reserve.salehvip-clud.ir/api/v1');
-  final _wsUrlController = TextEditingController(text: 'wss://reserve.salehvip-clud.ir/ws');
+  final _apiUrlController = TextEditingController(text: 'https://kirkir.salehvip-clud.ir/api/v1');
+  final _wsUrlController = TextEditingController(text: 'wss://kirkir.salehvip-clud.ir/ws');
 
   // Database connection fields
   final _dbHostController = TextEditingController(text: 'mysql');
@@ -35,15 +35,20 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
 
   Future<void> _loadSavedConfig() async {
     final cfg = await ApiService.getServerConfig();
-    final host = cfg['host'] ?? 'reserve.salehvip-clud.ir';
+    var host = cfg['host'] ?? 'kirkir.salehvip-clud.ir';
+    if (host == 'reserve.salehvip-clud.ir') host = 'kirkir.salehvip-clud.ir';
     final proto = cfg['protocol'] ?? 'https';
     final port = cfg['port'] ?? '443';
     final path = cfg['apiPath'] ?? '/api/v1';
+    var fullUrl = cfg['fullUrl'] ?? '$proto://$host$path';
+    if (fullUrl.contains('reserve.salehvip-clud.ir')) {
+      fullUrl = fullUrl.replaceAll('reserve.salehvip-clud.ir', 'kirkir.salehvip-clud.ir');
+    }
 
     setState(() {
       _subDomainController.text = host;
       _httpsPortController.text = port;
-      _apiUrlController.text = '$proto://$host$path';
+      _apiUrlController.text = fullUrl;
       _wsUrlController.text = '${proto == "https" ? "wss" : "ws"}://$host/ws';
     });
 
@@ -216,81 +221,93 @@ class _ServerDatabaseScreenState extends State<ServerDatabaseScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // Clean 2-Column Grid of Essential Fields
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Right Column (Server and API parameters)
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.mainBackground,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.dns_rounded, size: 20, color: AppColors.primaryGreen),
-                              SizedBox(width: 8),
-                              Text(
-                                'مشخصات ارتباط سرور و وب‌سرویس (API)',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          _buildInputField('دامنه یا آی‌پی سرور (Domain / IP)', _subDomainController, Icons.domain, onChanged: (_) => _updateDerivedUrls()),
-                          const SizedBox(height: 16),
-                          _buildInputField('پورت سرور (Port)', _httpsPortController, Icons.numbers, onChanged: (_) => _updateDerivedUrls()),
-                          const SizedBox(height: 16),
-                          _buildInputField('آدرس کامل وب‌سرویس API', _apiUrlController, Icons.api),
-                          const SizedBox(height: 16),
-                          _buildInputField('آدرس وب‌سوکت رویدادهای زنده (WebSocket)', _wsUrlController, Icons.sync_alt),
-                        ],
-                      ),
+              // Responsive Grid of Essential Fields
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 750;
+                  final serverCard = Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.mainBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.cardBorder),
                     ),
-                  ),
-                  const SizedBox(width: 22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.dns_rounded, size: 20, color: AppColors.primaryGreen),
+                            SizedBox(width: 8),
+                            Text(
+                              'مشخصات ارتباط سرور و وب‌سرویس (API)',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        _buildInputField('دامنه یا آی‌پی سرور (Domain / IP)', _subDomainController, Icons.domain, onChanged: (_) => _updateDerivedUrls()),
+                        const SizedBox(height: 16),
+                        _buildInputField('پورت سرور (Port)', _httpsPortController, Icons.numbers, onChanged: (_) => _updateDerivedUrls()),
+                        const SizedBox(height: 16),
+                        _buildInputField('آدرس کامل وب‌سرویس API', _apiUrlController, Icons.api),
+                        const SizedBox(height: 16),
+                        _buildInputField('آدرس وب‌سوکت رویدادهای زنده (WebSocket)', _wsUrlController, Icons.sync_alt),
+                      ],
+                    ),
+                  );
 
-                  // Left Column (Database parameters on Server)
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.mainBackground,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.storage_rounded, size: 20, color: AppColors.primaryGreen),
-                              SizedBox(width: 8),
-                              Text(
-                                'مشخصات پایگاه داده مرکزی (MySQL Server)',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          _buildInputField('میزبان دیتابیس در سرور (Host)', _dbHostController, Icons.dns),
-                          const SizedBox(height: 16),
-                          _buildInputField('پورت پایگاه داده (MySQL Port)', _dbPortController, Icons.numbers),
-                          const SizedBox(height: 16),
-                          _buildInputField('نام پایگاه داده (Database Name)', _dbNameController, Icons.dataset),
-                          const SizedBox(height: 16),
-                          _buildInputField('نام کاربری دیتابیس (Database User)', _dbUserController, Icons.badge),
-                        ],
-                      ),
+                  final dbCard = Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.mainBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.cardBorder),
                     ),
-                  ),
-                ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.storage_rounded, size: 20, color: AppColors.primaryGreen),
+                            SizedBox(width: 8),
+                            Text(
+                              'مشخصات پایگاه داده مرکزی (MySQL Server)',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        _buildInputField('میزبان دیتابیس در سرور (Host)', _dbHostController, Icons.dns),
+                        const SizedBox(height: 16),
+                        _buildInputField('پورت پایگاه داده (MySQL Port)', _dbPortController, Icons.numbers),
+                        const SizedBox(height: 16),
+                        _buildInputField('نام پایگاه داده (Database Name)', _dbNameController, Icons.dataset),
+                        const SizedBox(height: 16),
+                        _buildInputField('نام کاربری دیتابیس (Database User)', _dbUserController, Icons.badge),
+                      ],
+                    ),
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      children: [
+                        serverCard,
+                        const SizedBox(height: 20),
+                        dbCard,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: serverCard),
+                      const SizedBox(width: 22),
+                      Expanded(child: dbCard),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 28),
               const Divider(color: AppColors.cardBorder, height: 1),
